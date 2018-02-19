@@ -45,7 +45,7 @@ There are also some libraries that projects can import and make use of in their 
 
 Here's a bird's eye view of how things would work
 
-![Testing Framework](https://github.com/rarebreed/tree/master/docs/images/ParallelTesting-RHSM-qe.png)
+![Testing Framework](https://github.com/rarebreed/mercury/blob/master/docs/images/ParallelTesting-RHSM-qe.png)
 
 ## __Test watcher | Sentinel__
 
@@ -132,7 +132,8 @@ often either done poorly, or written in such a way that there is not a way to ge
 
 For example, it is very common to store testcase information in some kind of ALM tool, like ClearQuest, qTest, Spira,
 etc.  However, accessing this information, or even entering it in can be a nightmare.  Why not let the metadata about
-the tests live with the tests themselves?  Beyond the usual testcase information, like what kind of test it is (unit, integration, etc), if it is automated, or what steps it contains, other kinds of metadata are often necessary.  This 
+the tests live with the tests themselves?  Beyond the usual testcase information, like what kind of test it is (unit,
+ integration, etc), if it is automated, or what steps it contains, other kinds of metadata are often necessary.  This 
 could be information like test dependencies, and how the test needs to be executed.
 
 So, each test method should contain metadata.  The metadata will be stored either in the test method itself as some
@@ -227,7 +228,7 @@ Having a database for the metadata and results opens up all kinds of interesting
 
 Here's an example of how based on a different trigger type, the TestSuite can be determined.
 
-![TestSuite flow](https://github.com/rarebreed/tree/master/docs/images/TestGenerationDetailed.png)
+![TestSuite flow](https://github.com/rarebreed/mercury/blob/master/docs/images/TestGenerationDetailed.png)
 
 ### *Work to do*
 
