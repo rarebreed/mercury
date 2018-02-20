@@ -22,7 +22,7 @@ of basic services that make up the infrastructure:
 
 | Service             | Description                                                     | Lang        | Status
 |-------------------- |-----------------------------------------------------------------|------------ |--------
-| polarizer-sentinel  | Watches for messages to know when and tests to run              | java/eta    | TBD
+| polarizer-sentinel  | Watches for messages to know when and what tests to run         | java/eta    | TBD
 | polarizer-seneschal | Overall manager and director of test execution                  | java/eta    | TBD
 | polarizer-fabrum    | creates, provisions and inventories all the Systems Under Test  | typescript  | TBD
 | polarizer-emissary  | Runs the suites chosen by the scheduler, reporting results      | typescript  | TBD
@@ -254,7 +254,7 @@ if a testcase requires a new candlepin (because it has different TESTDATA) that 
 
 Fabrum's job is to create TestPlatform as needed, and it does so by looking at the metadata 
 
-Fabrum gets signaled by Sentinel, and it is involved primarily with the creation of Test Platforms:
+Fabrum gets signaled by Seneschal, and it is involved primarily with the creation of Test Platforms:
 
 - Create Test Platforms which could be one of the following:
   - Openstack compute nodes
@@ -342,16 +342,35 @@ Once we choose a framework (or two), emissary needs to create a wrapper around t
 the chosen test framework needs to be able to return the test report in xunit style format, or at least have a way to 
 do so.
 
-Framework features:
+Framework feature requirements:
 
 | Must have | Feature
 |-----------|--------------------------------------------------------------------------
-| yes       | AfterTest hooks
+| yes       | AfterTest hooks (to do live reports)
 | yes       | Test Report in xunit format
 | yes       | Able to run webdriver.io tests
 | yes       | Built in async support
+| no        | BeforeTest hooks (to setup state or clean the system)
 | no        | In browser tests for cockpit.dbus
 | no        | Test discover
+
+Notice that the BeforeTest hooks are set to "no" as a Must have requirement.  Why so?  One could argue that this is a 
+required feature, so that we can clean up between tests.
+
+The problem with this is that if a test "messes up" a system, perhaps by altering files on the syste, this prevents 
+the test from being run concurrently by other tests.  Secondly, if the BeforeTest/AfterTest method throws an exception,
+or if the TestSuite is somehow aborted, then the cleanup will fail to be performed.
+
+For these reasons, the BeforeTest/Suite methods which do clean up should be considered a code smell.  The metadata for 
+test should indicate any state that it is being manipulated so that we can try to parallelize tests.  This is also 
+why I have been a big advocate for pure FP lang (like haskell or purescript, but not clojure).  In a pure FP language,
+the type of a function explicitly indicates if it side-effectful.  This makes it much easier to figure out what tests
+are manipulating state (it still won't tell you _what_ state is being manipulated, only for example that is is a write
+to a file, but not a write to which file).
+
+Cleanup of systems for the next test essentially means wiping the slate clean, and creating a new VM.  Creation of a new
+VM is relatively cheap, and it is guaranteed to clean everything up.  In some cases, we might be able to spin up a 
+new container instead
 
 **Reporting and Metrics**
 
@@ -563,7 +582,7 @@ The database will most likely be OrientDB using graphs.
 
 ## Microservices to replace Jenkins
 
-- Create a kafka message bus to inform emissary
+- Create a message bus with persistent and guaranteed delivery to inform emissary
 - Create the emissary for testrunner service
 
 Jenkins tries to solve things either through old-fashioned jobs, or by Pipelines.  But here's the problem.  Jenkins,
@@ -581,7 +600,7 @@ Task to run) together with some kind of message that gets sent.  The advantages 
 
 - It's code you can manipulate at runtime
 - It's easier to debug
-- Jenkins assumes a synchronous world, but it's not
+- Asynchronous jobs (Jenkins assumes a synchronous world, but it's not)
 
 Take for example running a job that 1) may fail and/or 2) takes an indeterminate amount of time.  How do you tell
 jenkins if this job failed or not?  One option is to just keep the job running until some specified timeout, and

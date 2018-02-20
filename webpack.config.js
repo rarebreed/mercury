@@ -1,15 +1,16 @@
 const path = require('path');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
-    entry: "./src/app.tsx",
-    devtools: "inline-source-map",
+    entry: ["./src/app.tsx"],
+    devtool: "inline-source-map",
     output: {
         filename: "bundle.js",
         path: path.resolve(__dirname, 'dist')
     },
     resolve: {
         // Add '.ts' and '.tsx' as a resolvable extension.
-        extensions: ["", ".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
+        extensions: [".webpack.js", ".ts", ".tsx", ".js"],
     },
     module: {
         loaders: [
@@ -21,5 +22,8 @@ module.exports = {
     externals: {
         "react": "React",
         "react-dom": "ReactDOM"
-    }
+    },
+    plugins: [
+        new CleanWebpackPlugin(["dist"])
+    ]
 }
