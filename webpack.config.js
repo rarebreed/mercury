@@ -1,29 +1,53 @@
 const path = require('path');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+// const CleanWebpackPlugin = require('clean-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+let distPath = path.resolve(__dirname, 'dist');
+console.log(distPath);
 
 module.exports = {
-    entry: ["./src/app.tsx"],
+    entry: "./app/app.tsx",
     devtool: "inline-source-map",
     output: {
         filename: "bundle.js",
-        path: path.resolve(__dirname, 'dist')
+        path: distPath,
+        publicPath: "dist/"
     },
     resolve: {
         // Add '.ts' and '.tsx' as a resolvable extension.
-        extensions: [".webpack.js", ".ts", ".tsx", ".js"],
+        extensions: [".jsx", ".ts", ".tsx", ".js"],
     },
     module: {
-        loaders: [
+        rules: [
             // all files with a '.ts' or '.tsx' extension will be handled by 'ts-loader'
-            { test: /\.tsx?$/, loader: "ts-loader" },
-            { enforce: "pre", test: /\.js$/, loader: "source-map-loader" }
+            { 
+                test: /\.tsx?$/, 
+                use: "ts-loader" 
+            },
+            { 
+                enforce: "pre", 
+                test: /\.js$/, 
+                use: "source-map-loader" 
+            },
+            { 
+                test: /\.css$/, 
+                use: ExtractTextPlugin.extract({fallback: "style-loader", use: "css-loader"})
+            },
+            { 
+                // Look for any image files, and if they are more than 20k, load in separate dir 
+                test: /\.({jpe?g}|png|gif|svg)$/, 
+                use: [
+                  {
+                      loader: 'url-loader',
+                      options: { limit: 20000 }
+                  },
+                  'image-webpack-loader'
+                ]
+            }
         ]
     },
-    externals: {
-        "react": "React",
-        "react-dom": "ReactDOM"
-    },
     plugins: [
-        new CleanWebpackPlugin(["dist"])
+        // new CleanWebpackPlugin(["dist"]),
+        new ExtractTextPlugin("styles.css")
     ]
 }
