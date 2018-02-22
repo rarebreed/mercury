@@ -16,6 +16,16 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         };
     }
 
+    // Note:  If you dont write it with fat arrow style, this is not bound
+    handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+            alert('A new arg was submitted: \n' + this.state.args);
+            event.preventDefault();
+    }
+
+    handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+            this.setState({args: event.currentTarget.value});
+    }
+
     loadDefaultArgs(): string {
         let args = {
             xunit: {
@@ -47,19 +57,10 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         return JSON.stringify(args, null, 2);
     }
 
-    handleSubmit(event: Event) {
-        console.log('An essay was submitted: \n' + this.state.args);
-        event.preventDefault();
-    }
-
-    handleChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
-        this.setState({args: event.currentTarget.value});
-    }
-
     render() {
         return (
-            <form>
-                <label htmlFor={this.props.id}>{this.props.label}
+            <form onSubmit={this.handleSubmit}>
+                <label htmlFor={this.props.id}>{this.props.label}</label>
                     <textarea
                         name={this.props.id} 
                         cols={this.props.cols} 
@@ -67,7 +68,6 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
                         value={this.state.args} 
                         onChange={this.handleChange} 
                     />
-                </label>
                 <input type="submit" id={this.props.id} value="Submit" />
             </form>
         );
