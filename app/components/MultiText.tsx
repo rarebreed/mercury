@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as Rx from 'rxjs/Rx';
 
 interface MTProps {
     id: string;
@@ -7,23 +8,55 @@ interface MTProps {
     label: string;
 }
 
+/** 
+ * Component for a textarea field with a submit button
+ * 
+ * Note that this uses rxjs with the emitter field.  This is used to read the actual current state of the 
+ * component.  In other words, interested parties should subscribe to this.emitter, instead of trying to 
+ * access this.state.  This is because setState is asynchronous, so this.state may not actually be updated
+ * until react does some things.  Just as writes to this.state has to go through this.setState, all reads
+ * for the current state come from this.emitter
+ */
 export class MultiText extends React.Component<MTProps, {args: string}> {
+    emitter: Rx.BehaviorSubject<string>;
+    mountState: Rx.BehaviorSubject<Date>;
+
     constructor(props: MTProps) {
         super(props);
 
         this.state = {
             args: this.loadDefaultArgs()
         };
+
+        this.mountState = new Rx.BehaviorSubject(new Date());
+        this.emitter = this.makeEmitter();
+        this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
+
+        this.componentDidMount.bind(this);
     }
 
-    // Note:  If you dont write it with fat arrow style, this is not bound
+    makeEmitter = () => {
+        let obs = new Rx.BehaviorSubject(this.state.args);
+        // TODO:  Store or persist state.
+        return obs;
+    }
+
+    // Note:  If you dont write these methods with fat arrow style, _this_ is not bound correctly when called
     handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
             alert('A new arg was submitted: \n' + this.state.args);
             event.preventDefault();
     }
 
     handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-            this.setState({args: event.currentTarget.value});
+        event.persist();  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
+        let text: string = event.target.value;
+        this.setState({args: text}, () => {
+            this.emitter.next(text);
+        });
+    }
+
+    componentDidMount() {
+        this.mountState.next(new Date());
     }
 
     loadDefaultArgs(): string {
