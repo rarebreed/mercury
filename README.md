@@ -45,3 +45,100 @@ this as an assertion value to make sure that your code renders to the virtual DO
 While possible, there's so many moving parts, that it would be better to isolate the moving 
 variables first.  This project is meant to see what it is like to unit test react components
 and run some browser tests.
+
+## What about state management?
+
+TL;DR  I'd start with rxjs first, then try out mobx
+
+So, everyone's first thought on this is redux.  It's definitely got the most mindshare.  But the 
+more reading I do, the more people say how many workarounds you need to do for things, not to 
+mention all the boilerplate code.
+
+Mobx seems to be a promising alternative.  It is a FRP based library to handle state management.
+Reactive programming is really nice and it solves many asynchronous _and_ state related problems.
+The problem is it takes a lot of getting used to.  Most programmers are not familiar with either
+functional or asynchronous programming, then you throw on top of that, the idea that state does
+not belong to any object!  In reactive programming, state flows through the system, and interested
+objects assign themselves (subscribe) to this stream of ever flowing data.
+
+Mobx hides a lot of this complexity, but I've also heard that is its problem.  There's too much 
+"magic" going on.  Using plain old rxjs would allow you to reimplement a lot of the same functionality
+albeit with more upfront work.  You'd have to lay down the pipes so to speak, but there wouldn't
+be any magic either.  And inevitably, when you start debugging stuff, you need to know how those
+inner layers work anyway.
+
+But if rxjs proves too costly to write all the plumbing, mobx seems to be the better alternative
+to redux.
+
+## Why typescript?  What about flow or plain old es2016-es2018?
+
+I've played a bit with flow.  While flow is supposed to be more rigourous and catch more compile
+time errors (it is more sound and complete to be technical), I've had problems.  
+
+Firstly, flow does let you incrementally type more easily.  This is a blessing and a curse.  This
+means that if you have some 3rd party library without type definitions, you can pretty much just
+drop them in and use them.  On the bad side, anything touching those functions/variables have no
+typing information, so flow's type checker has to assume they are the _any_ type (which basically
+means they can be any type except null or undefined)
+
+Secondly, the tooling for flow kinda sucks.  I've had issues with both atom and vscode trying to 
+get intellisense to work.  Also, there's a ton of stuff you have to hook into webpack and babel
+to make sure flow compiles right.  Because typescript came out first, there are more libraries
+with typescript definitions than for flow.  And Facebook itself seems to come up with both 
+typescript and flow definitions anyways.
+
+Lastly, I have to wonder about Facebook's committment to flow.  FB's new hotness is a language
+called reasonml (which is basically ocaml <=> javascript).  Their messenger app is now written
+almost totally in reasonml, and they are also writing react-reason.  Since reasonml has an even
+more powerful typesystem than flow (which is already more powerful than java), I don't see why
+FB would expend effort on two compile-to-javascript languages.
+
+As for why not plain old ecmascript, typescript will help you catch more errors.  Also, with 
+ecmascript, you need more configuration in your webpack config than with typescript.  Plus, 
+typescript is a superset of ecmascript anyway (and you can even transpile the code typescript
+generated with babel, in case typescript doesn't yet support the latest ecmascript version).
+
+## Why react?  Why not cyclejs?
+
+Ok, I like cyclejs a lot.  It's a really elegant framework that truly embraces Functional Reactive
+Programming.  Calling react functional is almost insulting.  Most components are stateful and
+the state is held either inside the component itself, or the state is stuffed inside a state 
+store like redux or mobx.
+
+React also has some quirks to it.  Being familiar with lifecycle events is required if you want
+accurate testing results.  And if you use setState, you have to realize that this.state is 
+updated asynchronously (in other words, the react devs force you to use setState to write to 
+this.state, but they don't tell you how to asynchronously get the value of this.state).
+
+On the other hand, cyclejs is a pure FRP framework.  There are no classes anywhere, and thus no
+_this_ at all!  It follows the principles of functional composition, and it's Model-View-Intent
+architecture is simpler than Flux.  So why not cyclejs?
+
+Frankly, I'd love to see us use cyclejs, but this is probably not practically feasible. For one
+it would require a rewrite of the existing code.  Two, there's not as documentation and tooling
+for cycle as there is for react.  There's tons of stuff out there for react.
+
+# Playground for reactive testing
+
+Lastly, mercury will be a playground for reactive testing.  What do I mean by reactive testing?
+
+Imagine if there was test dbus service listening for all the subman DBus signals, and this test
+service could bridge the results over a websocket.  
+
+You could do all kinds of interesting things:
+
+- Monitor when rhsm.conf changes
+  - Listen for Configuration Dbus signal
+    - Can be used by tests to know to rerun rhsmd service
+- Monitor when /etc/pki/product changes
+  - send the data about what certs were added/deleted/edited to interested party (like a test)
+- Send event to listener when react's componentDidMount() was fired
+  - This means that the react component has been rendered to the physical DOM and can be tested
+    with webdriver (no polling for DOM element to exist)
+- Let components listen for emitted events from other components
+  - Which is a major use case for redux which isn't needed
+- Log the emitted state to a journal
+  - Can be used for "time travel"
+  - Another use case for redux which isn't needed
+- Allow for the cancellation of a long running async task
+  - Not possible with redux without jumping through hoops (redux-saga, etc)
