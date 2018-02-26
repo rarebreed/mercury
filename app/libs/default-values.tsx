@@ -16,6 +16,14 @@ type TestCase = {
     teststeps: Array<Array<TestStepColumn>>;
 };
 
+export interface TextMessage {
+    op: string;
+    type: string;
+    tag: string;
+    data: string;  // FIXME: This is really ugly, but I have to fix this in java first.  SHould be generic
+    ack: boolean;
+}
+
 export const templateXML = (args: TestCase) => `
 <testcases  project-id="${args.project}">
   <testcase id="${args.testcase_id}">
@@ -118,3 +126,17 @@ export const defaultMapping = `
       }
     }
 }`;
+
+export const makeRequest = ( op: string
+                           , type: string
+                           , tag: string
+                           , data: {}
+                           , ack: boolean = true): TextMessage => {
+    return {
+        op: op,
+        type: type,
+        tag: tag,
+        ack: ack,
+        data: JSON.stringify(data, null, 2)
+    };
+};

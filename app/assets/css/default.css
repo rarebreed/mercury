@@ -37,17 +37,16 @@
 }
 
 label {
-    padding: 10px;
+    padding: 2px;
 }
 
 input {
-    padding: 10px;
+    padding: 2px;
 }
 
 
 .label-submit {
     width: 50%;
-    padding: 10px;
     border: 2px solid seagreen;
     border-top-left-radius: 1em;
     border-top-right-radius: 1em;
@@ -57,7 +56,7 @@ input {
     width: 50%;
     min-width: 40%;
     height: 50ex;
-
+    padding: 0px;
     border: 2px solid seagreen;
     border-bottom-left-radius: 1em;
     border-bottom-right-radius: 1em;

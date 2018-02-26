@@ -20,6 +20,7 @@ export interface MTProps {
  * for the current state come from this.emitter
  */
 export class MultiText extends React.Component<MTProps, {args: string}> {
+    static emitters: Map<string, Rx.BehaviorSubject<string>> = new Map();
     emitter: Rx.BehaviorSubject<string>;
     mountState: Rx.BehaviorSubject<Date>;
 
@@ -32,7 +33,8 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
 
         this.mountState = new Rx.BehaviorSubject(new Date());
         this.emitter = this.makeEmitter();
-        this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
+        // this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
+        MultiText.emitters.set(props.id, this.emitter);
 
         this.componentDidMount.bind(this);
     }
