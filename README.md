@@ -1,7 +1,10 @@
 # What is mercury
 
-mercury is basically a proof-of-concept project written using typescript, react, rxjs, enzyme
-and jest so see how to do unit and integration tests for React components.
+mercury is essentially three things:
+
+- a proof-of-concept project for state management using rxjs 
+- practice project to learn typescript, react, enzyme, jsdom and AVA
+- a GUI front end project to help test polarizer's websocket end points (/testcase/import and /umblistener)
 
 While we can do cockpit testing using webdriver.io for end to end system level testing, as the 
 [Testing Pyramid][-tp] tells you, only about 10-20% of your testing "budget" should be system 
@@ -9,10 +12,11 @@ or UI tests.  The vast bulk should be unit and integration tests.
 
 The dilemma is how do you test a UI level component in a unit test?
 
-- enzyme: library from AirBnB to isolate react components and run them in jsdom
-- jest: framework from Facebook built on top of jasmine that can take DOM snapshots
-- typescript: language with good tooling and 3rd party support
-- rxjs: low-level state management and bridge capabilities
+- [enzyme][-enzyme]: library from AirBnB to isolate react components and run them in jsdom
+- [AVA][-AVA]: a modern testing framework built from the ground for async parallel testing
+- [typescript][-ts]: language with good tooling and 3rd party support
+- [rxjs][-rxjs]: low-level state management and bridge capabilities
+- [jsdom][-jsdom]: a javascript "browser" that implements the DOM API, and can execute javascript
 
 Integration tests are another interesting puzzle to solve.  Most of what happens in cockpit 
 boils down to:
@@ -142,3 +146,10 @@ You could do all kinds of interesting things:
   - Another use case for redux which isn't needed
 - Allow for the cancellation of a long running async task
   - Not possible with redux without jumping through hoops (redux-saga, etc)
+
+[-tp]: http://www.agilecoachjournal.com/2014-01-28/the-agile-testing-pyramid
+[-enzyme]: http://airbnb.io/enzyme/
+[-AVA]: https://github.com/avajs/ava
+[-ts]: https://www.typescriptlang.org/
+[-rxjs]: http://reactivex.io/rxjs/
+[-jsdom]: http://airbnb.io/enzyme/docs/guides/jsdom.html
