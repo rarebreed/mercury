@@ -20,4 +20,4 @@ const makeapp = () => {
 };
 
 const app = makeapp();
-let service = app.listen(4000, () => console.log('Running mercury service at localhost:4000'));
+let service = app.listen(4001, () => console.log('Running mercury service at localhost:4000'));

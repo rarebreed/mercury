@@ -35,3 +35,37 @@
     text-decoration: none;
     cursor: pointer;
 }
+
+label {
+    padding: 10px;
+}
+
+input {
+    padding: 10px;
+}
+
+
+.label-submit {
+    width: 50%;
+    padding: 10px;
+    border: 2px solid seagreen;
+    border-top-left-radius: 1em;
+    border-top-right-radius: 1em;
+}
+
+.text-submit {
+    width: 50%;
+    min-width: 40%;
+    height: 50ex;
+
+    border: 2px solid seagreen;
+    border-bottom-left-radius: 1em;
+    border-bottom-right-radius: 1em;
+}
+
+.todo {
+    color: yellow;
+    background-color: red;
+    border: 2px solid black;
+    text-align: center;
+}

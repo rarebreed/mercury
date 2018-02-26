@@ -48,6 +48,6 @@ module.exports = {
     },
     plugins: [
         // new CleanWebpackPlugin(["dist"]),
-        new ExtractTextPlugin("styles.css")
+        new ExtractTextPlugin("default.css")
     ]
 }

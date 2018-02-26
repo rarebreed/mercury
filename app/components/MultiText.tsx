@@ -1,7 +1,9 @@
 import * as React from 'react';
 import * as Rx from 'rxjs/Rx';
+import '../assets/css/default.css';
+import { defaultXml, defaultMapping } from '../libs/default-values';
 
-interface MTProps {
+export interface MTProps {
     id: string;
     cols: number;
     rows: number;
@@ -42,11 +44,6 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
     }
 
     // Note:  If you dont write these methods with fat arrow style, _this_ is not bound correctly when called
-    handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-            alert('A new arg was submitted: \n' + this.state.args);
-            event.preventDefault();
-    }
-
     handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         event.persist();  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
         let text: string = event.target.value;
@@ -59,7 +56,7 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         this.mountState.next(new Date());
     }
 
-    loadDefaultArgs(): string {
+    defaultArgs = (): string => {
         let args = {
             xunit: {
                 importer: {
@@ -90,19 +87,34 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         return JSON.stringify(args, null, 2);
     }
 
+    loadDefaultArgs(): string {
+        switch (this.props.id) {
+            case 'args':
+                return this.defaultArgs();
+            case 'testcase':
+                return defaultXml;
+            case 'mapping':
+                return defaultMapping;
+            default:
+                return '';
+        }
+    }
+
     render() {
         return (
-            <form onSubmit={this.handleSubmit}>
-                <label htmlFor={this.props.id}>{this.props.label}</label>
-                    <textarea
-                        name={this.props.id} 
-                        cols={this.props.cols} 
-                        rows={this.props.rows} 
-                        value={this.state.args} 
-                        onChange={this.handleChange} 
-                    />
-                <input type="submit" id={this.props.id} value="Submit" />
-            </form>
+            <div>
+                <div className="label-submit">
+                   <label>{this.props.label}</label>
+                </div>
+                <textarea
+                    className="text-submit"
+                    name={this.props.id} 
+                    cols={this.props.cols} 
+                    rows={this.props.rows} 
+                    value={this.state.args} 
+                    onChange={this.handleChange} 
+                />
+            </div>
         );
     }
 }
