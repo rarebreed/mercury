@@ -183,8 +183,8 @@ this.state, there is no _this_ at all!  It follows the principles of functional 
 and its Model-View-Intent architecture is simpler than Flux.  So why not cyclejs?
 
 Frankly, I'd love to see us use cyclejs, but this is probably not practically feasible. For one,
-it would require a rewrite of the existing code.  Two, there's not as documentation and tooling
-for cycle as there is for react.  There's tons of stuff out there for react.
+it would require a rewrite of the existing code.  Two, there's not as much documentation and 
+tooling for cycle as there is for react.  There's tons of stuff out there for react.
 
 # Playground for reactive testing
 
@@ -221,6 +221,11 @@ the world very often is not synchronous.  Or at best, it might be synchronous, b
 may take a very long time in the coming (ie, the function call that will get you some data has
 to block).  At best, this is wasteful, and at worst, you will get the wrong data.  
 
+```javascript
+let ans = do_something(10)  // If this code returns a promise or is asynchronous...
+let final_result = something_else(ans)  // what is the value of ans when we pass it in?
+```
+
 If you have a blocking synchronous call, either your thread waits until it gets data (or maybe
 it times out), or, you spawn some new thread and your main thread goes about its business until
 your thread completes and sends a signal, or you try to retrieve the result of a future/promise.
@@ -238,7 +243,8 @@ be accessing inconsistent data.  This is a further nail in the performance of th
 approach to concurrency, because while that one writer is modifying data, any other actors are
 blocked (either through a lock, mutex, or some kind of transaction).  Now you've got lock based
 contention to worry about.  Did I mention livelocks and deadlocks?  I haven't talked about the
-overhead of thread context switching either.
+overhead of thread context switching either.  And isn't the whole point of using more threads 
+supposed to make my program faster and _more_ lively?
 
 Instead of approaching concurrency with multiple threads (or processes), there's another approach
 that has gained popularity.  A single threaded event loop (or reactor) model.  Back before 
@@ -339,7 +345,6 @@ the javascript world (with its equally popular cohort rxjava in the java world).
 programming model, computations become like a graph model, where the vertices are either some 
 kind of Observable emitting data, or an Observer acting on that data, and the outgoing edges are
 the emitted data.  
-
 
 If you have done any circuit programming or data-flow oriented programming (ala LabView, or vhdl)
 , this may sound a little familiar.  When you have a circuit board, you don't have all the circuits
