@@ -361,7 +361,7 @@ A computation therefore is the traversal of a graph!! When you hear fancy talk a
 what that is, in a vastly simplified nutshell, is a way to glue your pipeline together (and to separate the pure part of
 a computation from the impure parts).
 
-.. image:: ../images/computation-as-graph.png
+.. image:: ./images/computation-as-graph.png
    :scale: 70 %
 
 So why is it advantageous to think of a program as composition of functions or like a graph? If you see your program in
@@ -1156,7 +1156,7 @@ some agent or ref) and other code has to manipulate it. With reactive programmin
 Instead of some client actively asking for or changing some data tucked away inside some object, the object with the
 data tells interested parties when its data has changed:
 
-.. image:: ../images/react-vs-proact.png
+.. image:: ./images/react-vs-proact.png
    :scale: 70%
 
 Notice how we inverted the agent in control as well as the flow of data?  That is what reactive is.
