@@ -26,7 +26,7 @@ class App extends React.Component<RowCols, {}> {
 
     componentDidMount() {
         console.log('===========================================');
-        console.log('Something happened');
+        console.log('Something happened to mount MultiText');
         console.log('===========================================');
     }
 
