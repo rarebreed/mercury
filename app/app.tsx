@@ -16,18 +16,21 @@ class App extends React.Component<RowCols, {}> {
     message$: Rx.Observable<TextMessage>;
     message: TextMessage;
     cancel: Rx.Subscription | null;
+    mount$: Rx.BehaviorSubject<number>;
 
     constructor(props: RowCols) {
         super(props);
         this.args = new Map();
         this.textState = new Map();
         this.cancel = null;
+        this.mount$ = new Rx.BehaviorSubject(0);
     }
 
     componentDidMount() {
         console.log('===========================================');
-        console.log('Something happened to mount MultiText');
+        console.log('Something happened to mount App');
         console.log('===========================================');
+        this.mount$.next(1);
     }
 
     /**

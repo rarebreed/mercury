@@ -134,7 +134,7 @@ the state is held either inside the component itself, or the state is stuffed in
 store like redux or mobx.
 
 React also has some quirks to it.  Being familiar with [react lifecycle][-react-evts] is required if you want
-accurate testing results.  And if you use setState, you have to realize that this.state is 
+accurate testing results.  And if you [use setState][-setState], you have to realize that this.state is 
 updated asynchronously (in other words, the react devs force you to use setState to write to 
 this.state, but they don't tell you how to asynchronously get the value of this.state).  Why is 
 this important to know?
@@ -444,6 +444,218 @@ things:
 - Allow for the user to cancel a long running async task (eg manifest generation)
   - Not possible with redux without jumping through hoops (redux-saga, etc)
 
+### Real World example
+
+Enough theory.  Let's show a proof of concept from Mercury itself.  Here's an example of what the 
+main App looks like:
+
+![Fresh start up][startup]
+
+As you can see, there are a couple of <textarea> elements.  These are coming from the MultiText 
+component. Take a look at the MultiText react component.  Notice that it has field that is an Rx.Subject:
+
+```typescript
+export class MultiText extends React.Component<MTProps, {args: string}> {
+    static emitters: Map<string, Rx.BehaviorSubject<string>> = new Map();
+    emitter: Rx.BehaviorSubject<string>;
+    mountState: Rx.BehaviorSubject<Date>;
+    //...
+}
+```
+
+What is that doing?  To help visualize what is going on, let's blank out all the text in the <textarea>
+
+![Cleared out textarea][clearedout]
+
+Notice that the MultiText component has a field called emitter which is a Rx.BehaviorSubject of string type.
+What is it doing?  Let's look at the code:
+
+```typescript
+    // ...
+    constructor(props: MTProps) {
+        super(props);
+
+        this.state = {
+            args: this.loadDefaultArgs()
+        };
+
+        this.mountState = new Rx.BehaviorSubject(new Date());  // Subject for componentDidMount events
+        this.emitter = this.makeEmitter();                     // 1. Created here
+        MultiText.emitters.set(props.id, this.emitter);        // 2. Add it to the static MultiText.emitters
+
+        this.componentDidMount.bind(this);
+    }
+
+    makeEmitter = () => {
+        let obs = new Rx.BehaviorSubject(this.state.args);     // Initial value is this.state.args
+        // TODO:  Store or persist state in a journal
+        return obs;
+    }
+    // ...
+```
+
+So basically, it's just creating an new Rx.BehaviorSubject, and assigning it to the component's 
+this.emitter.  Furthermore, we assign this to the static MultiText.emitters map of them (we will see
+why in a bit).  But how is this.emitter used?
+
+```typescript
+    // Note:  If you dont write these methods with fat arrow style, _this_ is not bound correctly when called
+    handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        event.persist();  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
+        let text: string = event.target.value;
+        this.setState({args: text}, () => {
+            this.emitter.next(this.state.args);
+        });
+    }
+```
+
+The handleChange method is called whenever the MultiText's <textarea> element gets an onChange event.  So, if
+the user starts typing in this component's <textarea> the onChange element in the DOM fires, which in turn 
+causes handleChange to fire.  So what does handChange do exactly?
+
+Ultimately, it calls this.setState, with an optional callback.  This callback is run once this.state has actually
+been set.  This callback when run, will invoke the subject (this.emitter) and pass through whatever the text currently
+is.  In other words the following flow of events happens:
+
+```
+User types in <textarea> => DOM onChange event => handleChange() => update this.state.args  => this.state.args to emitter 
+```
+
+So let's try adding some text in one of the textarea and see what happens
+
+![Adding text to textarea][nothing-happened]
+
+Wait, how come nothing special seems to have happened?  There's nothing in the console?  That's because the main
+App hasn't subscribed to the emitters yet!  So how do we do that?  We click the Submit button:
+
+![Clicked on Submit button][clicked-submit]
+
+Hmmm, doesn't seem like anything happened.  How come?  This is actually a feature (or problem depending on how you look 
+at it) of the difference between hot and cold Observables.  The Subject we created is a Hot Observable.  This means that
+Observers who subscribe to a Hot Observable will only get items emitted from the moment they subscribe and on.  A cold
+Observable on the other hand will emit all items it has emitted since it was created no matter when a new Observer does
+a subscribe.  An analogy is that Hot Observables are like watching old TV.  If you tuned in 10 minutes too late, too bad.
+Cold Observables are sort of like watching TV on TIVO.  You can watch stuff from the beginning.
+
+So how does the App subscribe to the MultiText's emitters?  And what good does this do us?  Once the App subscribes to the
+MultiText emitters, this means all data being entered in the MultiText's <textarea> element will be available to App.
+component (that we care about) is available to any other component, so long as it has access to this.emitter.  
+
+Let's see how that's done in the App component:
+
+```typescript
+
+class App extends React.Component<RowCols, {}> {
+    cancel: Rx.Subscription | null;
+    // ...
+
+    /**
+     * every time the onChange is called from MultiText component, it will emit the event.  Let's 
+     * merge these together
+     */
+    accumulateState = () => {
+        console.log('Getting the state');
+        // merge the three Subjects into one stream
+        let arg$ = MultiText.emitters.get('args');
+        let testcase$ = MultiText.emitters.get('testcase');
+        let mapping$ = MultiText.emitters.get('mapping');
+        if (arg$ === undefined || testcase$ === undefined || mapping$ === undefined) {
+            throw Error('Subject was null');
+        }
+
+        // Merge the three Subject streams into a single stream.  Each stream we pass here is actually
+        // a new one, such that it returns an object instead of just a string
+        return Rx.Observable.merge( arg$.map(a: string => new Object({tcargs: a}))
+                                  , testcase$.map(t: string => new Object({testcase: t}))
+                                  , mapping$.map(m: string => new Object({mapping: m})))
+            .do(i => console.log(`Got new item: ${i}`))
+            .scan((acc, next) => Object.assign(acc, next), {})  // merge the objects into one big one
+            .map(data => {
+                let request = makeRequest('testcase-import', 'na', 'mercury', data);
+                return request;
+            });
+    }
+
+    /**
+     * Once all the arguments have been finalized, when the Submit button is clicked, all the data will be sent
+     * over the websocket to polarizer
+     */
+    onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        // Accumulate all textState Observables emitted data.  Initially, this.cancel will be null.
+        if (this.cancel === null) {
+            this.message$ = this.accumulateState();
+            this.cancel = this.message$.subscribe(
+                n => {
+                    this.message = n;
+                    console.log(this.message.data);
+                },
+                e => {
+                    console.error('Problem getting TextMessage');
+                    this.message = makeRequest('', 'error', 'exception', {});
+                }
+            );
+        }
+
+        console.log(this.message.data);
+        // console.log(`Going to submit the following:\n${JSON.stringify(this.message, null, 2)}`);
+        event.preventDefault();
+    }
+    // ...
+
+}
+```
+
+What's going on here?  Let's look at what accumulateState is doing.  The App has 3 MultiText components 
+inside it.  App knows the props.id, since it assigned them to the MultiText components, so we can use the 
+id to retrieve the Rx.Subjects from the MultiText.emitters Map<string, Rx.Subject>.  It then merges three
+new streams (these streams are based off the original streams, but instead of returning a regular string, 
+these streams return a javascript object).  I won't go into too much detail about what the operators are 
+doing, but do() is like for side-effects, scan() is like a continuous reduce(), and map() is like map() in
+regular functional programming.
+
+The accumulateState function returns this new Observable stream (btw, stream and Observable are often used
+interchangeably), and then in the onSubmit function (which is called when we click the Submit button), the 
+App component subscribes to this Observable.  All it currently does is print out the object to the console, 
+but in the future, we can send this data over a websocket.
+
+Let's see what happens when we start entering text in the <textarea> now that App has subscribed to MultiText.
+
+![Entering text after subscribing][onchange]
+
+Voila!!  Now we see the entered text.  Which means that in the App component, we can call in the onSubmit 
+other functionality, like sending the accumulated data to a websocket.
+
+Now, imagine applying this same principle to the componentDidMount method:
+
+```typescript
+    mount$: Rx.BehaviorSubject<number>;
+
+    constructor(props: RowCols) {
+        super(props);
+        this.args = new Map();
+        this.textState = new Map();
+        this.cancel = null;
+        this.mount$ = new Rx.BehaviorSubject(0);
+    }
+
+    componentDidMount() {
+        console.log('===========================================');
+        console.log('Something happened to mount MultiText');
+        console.log('===========================================');
+        this.mount$.next(1);
+
+        // TODO: make this Observable emit the event to a websocket
+    }
+```
+
+Since componentDidMount is called whenever the react component has been mounted from the virtual DOM into the
+physical DOM, we know that the element can be accessed (as long as the disabled property isn't set) from the 
+real DOM.  Wouldn't it be nice to let an external client, like maybe a webdriverio test know about this?
+
+One of the things that kills UI tests over time is how long they take, and the brittleness of knowing if/when
+an html element will appear.  Unlike in-browser tests, which don't have access to DOM events, there's no good
+way for selenium style tests to know when an element appears other than to waste cycles polling.
+
 [-tp]: http://www.agilecoachjournal.com/2014-01-28/the-agile-testing-pyramid
 [-enzyme]: http://airbnb.io/enzyme/
 [-AVA]: https://github.com/avajs/ava
@@ -462,3 +674,9 @@ things:
 [-obsv]: http://reactivex.io/documentation/observable.html
 [-redux]: https://redux.js.org/
 [-ws]: https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
+[-set-state]: https://reactjs.org/docs/react-component.html#setstate
+[startup]: https://github.com/rarebreed/mercury/blob/master/docs/images/Initial.png
+[clearedout]: https://github.com/rarebreed/mercury/blob/master/docs/images/Cleared-before-submit.png
+[nothinghappened]: https://github.com/rarebreed/mercury/blob/master/docs/images/ChangedText-Nothing-In-Console.png
+[clicked-submit]: https://github.com/rarebreed/mercury/blob/master/docs/images/Clicked-Submit.png
+[onchange]: https://github.com/rarebreed/mercury/blob/master/docs/images/OnChange-Shows-In-Console.png
