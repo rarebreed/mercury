@@ -25,10 +25,10 @@ boils down to:
 - User clicks on some DOM element in the GUI (eg a button)
 - The plugin either:
   - Does something internally to itself (eg modifies local state)
-  - Makes a websocket request to cockpit-ws
-    - If using the cockpit.dbus API, the websocket request will forward from cockpit-ws to cockpit-bridge
+  - Makes a websocket request to [cockpit-ws][-cockpit-ws]
+    - If using the [cockpit.dbus API][-cp-dbus], the websocket request will forward from cockpit-ws to cockpit-bridge
     - From cockpit-bridge it will pass the now dbus formatted request to the subman DBus API
-    - Subman DBus API will do its thing and return a dbus formatted message (back to cockpit-bridge)
+    - [Subman DBus API][-subman-db] will do its thing and return a dbus formatted message (back to cockpit-bridge)
     - The bridge will convert the dbus format back to Json and send it over websocket to the client
 
 So, if you want to test some layer there, say for example, you want to make sure that your 
@@ -46,12 +46,12 @@ this as an assertion value to make sure that your code renders to the virtual DO
 
 ## Why websockets?
 
-Well, for starters, that's how cockpit (the browser SPA) talks to cockpit (the server, cockpit-ws).  All
+Well, for starters, that's how cockpit (the browser [SPA][-spa]) talks to cockpit (the server, cockpit-ws).  All
 the messaging going back and forth is being done as websockets.  Therefore, it's not a bad thing to
 learn about them.
 
 Secondly, websockets, unlike REST, are bidirectional.  This enables websockets to do things that 
-traditional http can't (though Server Sent Events can touch on).  Websockets are really nice when 
+traditional http can't (though [Server Sent Events][-SSE] can touch on).  Websockets are really nice when 
 you want real-time data to be pushed without having to poll and ask for it.
 
 We could also make use of websockets for testing.  Just like one of the big use cases for cockpit
@@ -80,10 +80,10 @@ and run some browser tests.
 
 ## What about state management?
 
-TL;DR  I'd start with rxjs first, then try out mobx
+TL;DR  I'd start with rxjs first, then try out [mobx][-mobx]
 
-So, everyone's first thought on this is redux.  It's definitely got the most mindshare.  But the 
-more reading I do, the more people say how many workarounds you need to do for things, not to 
+So, everyone's first thought on this is [redux][-redux].  It's definitely got the most mindshare.  But the 
+more reading I do, the more people say [how many workarounds][-sitept] you need to do for things, not to 
 mention all the boilerplate code.
 
 Mobx seems to be a promising alternative.  It is a FRP based library to handle state management.
@@ -128,12 +128,12 @@ ecmascript, you need more configuration in your webpack config than with typescr
 
 ## Why react?  Why not cyclejs?
 
-Ok, I like cyclejs a lot.  It's a really elegant framework that truly embraces Functional Reactive
+Ok, I like [cyclejs][-cyclejs] a lot.  It's a really elegant framework that truly embraces Functional Reactive
 Programming.  Calling react functional is almost insulting.  Most components are stateful and
 the state is held either inside the component itself, or the state is stuffed inside a state 
 store like redux or mobx.
 
-React also has some quirks to it.  Being familiar with react lifecycle is required if you want
+React also has some quirks to it.  Being familiar with [react lifecycle][-react-evts] is required if you want
 accurate testing results.  And if you use setState, you have to realize that this.state is 
 updated asynchronously (in other words, the react devs force you to use setState to write to 
 this.state, but they don't tell you how to asynchronously get the value of this.state).  Why is 
@@ -199,6 +199,8 @@ approach to solving problems.
 
 ## What does reactive solve?
 
+Note: you might want to read my [functional reactive programming notes][-frp-notes] as well
+
 I will wager that most programmers over about 26 probably didn't learn about reactive or even
 functional programming.  So let's start with something familiar; how we program in an imperative
 and synchronous fashion.
@@ -249,14 +251,15 @@ supposed to make my program faster and _more_ lively?
 Instead of approaching concurrency with multiple threads (or processes), there's another approach
 that has gained popularity.  A single threaded event loop (or reactor) model.  Back before 
 multiprocessors were common, computer games were speedy enough.  How did they do it?  Games then
-(and I presume today, albeit with some multiprocessing) were basically big old event loops.  
+(and I presume today, albeit with some multiprocessing) were basically big old event loops.
 At some point in the loop, keyboard and mouse events were collected, and then the loop would move
-to the next piece of code (graphics updating, model updating, etc).  Nodejs took the idea of an
-event loop and proved how fast it could be.  Java only started overtaking nodejs web performance
-when its web frameworks also started supporting reactor (or proactor) event models.  In an event
-loop model, all functionality has to be made asynchronous, and therefore non-blocking.  If you 
-didn't do that, the event loop would hang waiting for some blocking method call, and everyone
-downstream in the loop would hang.
+to the next piece of code (graphics updating, model updating, etc).  
+
+Nodejs took the idea of an event loop and proved how fast it could be.  Java only started 
+overtaking nodejs web performance when its web frameworks also started supporting reactor 
+(or proactor) event models.  In an event loop model, all functionality has to be made asynchronous,
+and therefore non-blocking.  If you didn't do that, the event loop would hang waiting for some 
+blocking method call, and everyone downstream in the loop would hang.
 
 But wait, how do you program when you don't know when some function call will return?  We are 
 so ingrained to doing something like this:
@@ -294,7 +297,7 @@ which I will get to in a moment.  Because of this weakness, another new async so
 called Observables was developed.  Observables are closely related to the original FRP solution
 and are also related to the Actor model.
 
-Before I can talk about how Observables/Observers work, I need to discuss another fundamental
+Before I can talk about how [Observables/Observers][-obsv] work, I need to discuss another fundamental
 problem that our imperative synchronous solutions have ingrained on us. We are used to asking for
 data from some other object, because we are used to jealously guarding state inside of some 
 object, and only doling it out with great care (see above).  But instead of one object _asking_
@@ -447,3 +450,13 @@ things:
 [-ts]: https://www.typescriptlang.org/
 [-rxjs]: http://reactivex.io/rxjs/
 [-jsdom]: http://airbnb.io/enzyme/docs/guides/jsdom.html
+[-cockpit-ws]: http://cockpit-project.org/guide/latest/cockpit-ws.8
+[-cp-dbus]: http://cockpit-project.org/guide/latest/cockpit-dbus
+[-subman-db]: http://www.candlepinproject.org/docs/subscription-manager/dbus_objects.html
+[-spa]: https://www.codeschool.com/beginners-guide-to-web-development/single-page-applications
+[-SSE]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+[-mobx]: https://mobx.js.org/
+[-sitept]: https://www.sitepoint.com/redux-vs-mobx-which-is-best/
+[-cyclejs]: https://cycle.js.org/
+[-frp-notes]: https://github.com/rarebreed/mercury/blob/master/docs/func-types-reactive.rst
+[-obsv]: http://reactivex.io/documentation/observable.html
