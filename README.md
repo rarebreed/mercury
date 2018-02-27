@@ -460,3 +460,5 @@ things:
 [-cyclejs]: https://cycle.js.org/
 [-frp-notes]: https://github.com/rarebreed/mercury/blob/master/docs/func-types-reactive.rst
 [-obsv]: http://reactivex.io/documentation/observable.html
+[-redux]: https://redux.js.org/
+[-ws]: https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
