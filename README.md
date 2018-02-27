@@ -136,11 +136,51 @@ store like redux or mobx.
 React also has some quirks to it.  Being familiar with react lifecycle is required if you want
 accurate testing results.  And if you use setState, you have to realize that this.state is 
 updated asynchronously (in other words, the react devs force you to use setState to write to 
-this.state, but they don't tell you how to asynchronously get the value of this.state).
+this.state, but they don't tell you how to asynchronously get the value of this.state).  Why is 
+this important to know?
 
-On the other hand, cyclejs is a pure FRP framework.  There are no classes anywhere, and thus no
-_this_ at all!  It follows the principles of functional composition, and its Model-View-Intent
-architecture is simpler than Flux.  So why not cyclejs?
+Because this.setState() updates state _asynchronously_, if somewhere else in your code you blindly
+check this.state (which the react docs don't really talk about), you might have a problem.  This is
+because this.setState() is asynchronous and will only change this.state's values _at some future time_.
+So, not only must you only use this.setState() to make sure your state is synchronized properly, 
+you really also need some way to know when the state values have actually changed.  Here's an
+example of where this can go wrong:
+
+```javascript
+
+interface AccountProps {
+  holder: string,
+  id: number
+}
+
+interface BalanceState {
+    balance: number
+}
+
+class Foo extends React.Component<AccountProps, BalanceState>
+  constructor(props: AccountPros) {
+    super(props);
+  }
+
+  // Use this syntax using fat arrows, so we properly bind _this_
+  onHandle = (event) => {
+    this.setState({balance: event.currentTarget.value})
+  }
+
+  onSubmit = (event) => {
+    // Wrong, could blow up here.  If onSubmit gets called very soon to when onHandle was called, 
+    // there is no guarantee that this.setState has updated this.state.balance yet.
+    if (this.state.balance > 100) { 
+      ...
+    }
+  }
+}
+``` 
+
+This kind of problem is avoided in cyclejs.  Since cyclejs only has stateless components! So 
+cyclejs is a pure FRP framework.  There are no classes anywhere, and thus not only is there no
+this.state, there is no _this_ at all!  It follows the principles of functional composition, 
+and its Model-View-Intent architecture is simpler than Flux.  So why not cyclejs?
 
 Frankly, I'd love to see us use cyclejs, but this is probably not practically feasible. For one,
 it would require a rewrite of the existing code.  Two, there's not as documentation and tooling
