@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as Rx from 'rxjs/Rx';
-import '../assets/css/default.css';
+// import '../assets/css/default.css';
 import { defaultXml, defaultMapping } from '../libs/default-values';
 
 export interface MTProps {
@@ -21,7 +21,7 @@ export interface MTProps {
  */
 export class MultiText extends React.Component<MTProps, {args: string}> {
     static emitters: Map<string, Rx.BehaviorSubject<string>> = new Map();
-    emitter: Rx.BehaviorSubject<string>;
+    state$: Rx.BehaviorSubject<string>;
     mountState: Rx.BehaviorSubject<Date>;
 
     constructor(props: MTProps) {
@@ -32,9 +32,9 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         };
 
         this.mountState = new Rx.BehaviorSubject(new Date());
-        this.emitter = this.makeEmitter();
+        this.state$ = this.makeEmitter();
         // this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
-        MultiText.emitters.set(props.id, this.emitter);
+        MultiText.emitters.set(props.id, this.state$);
 
         this.componentDidMount.bind(this);
     }
@@ -50,7 +50,7 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         event.persist();  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
         let text: string = event.target.value;
         this.setState({args: text}, () => {
-            this.emitter.next(text);
+            this.state$.next(text);
         });
     }
 
