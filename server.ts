@@ -10,9 +10,11 @@ const makeapp = () => {
     // app.use(webpackMiddleware(webpack(webpackConfig)));
     const indexPath = path.join(__dirname, 'app.html');
     console.log(`indexPath = ${indexPath}`);
+
     let dpath = path.join(__dirname, 'dist');
     const publicPath = express.static(dpath);
     console.log(`publicPath = ${dpath}`);
+
     app.use('/dist', publicPath);
     app.get('/', (_, res) => { res.sendFile(indexPath); });
 
@@ -20,4 +22,4 @@ const makeapp = () => {
 };
 
 const app = makeapp();
-let service = app.listen(4001, () => console.log('Running mercury service at localhost:4000'));
+let service = app.listen(4001, () => console.log('Running mercury service at localhost:4001'));
