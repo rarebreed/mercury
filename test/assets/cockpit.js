@@ -4545,6 +4545,7 @@ function factory() {
 var self_module_id;
 
 /* Check how we're being loaded */
+console.log(`In cockpit.js: ${document.scripts}`)
 var last = document.scripts[document.scripts.length - 1].src || "";
 var pos = last.indexOf("/cockpit.js");
 if (pos === -1)

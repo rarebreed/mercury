@@ -28,11 +28,10 @@ window.Math = Math;
 
 global.window = window;
 global.document = window.document;
+// Hack to load cockpit.js into jsdom
+// global.cockpit = require('../assets/cockpit');
+// global.document.scripts = [{src: ""}]
 global.navigator = {
   userAgent: 'node.js',
 };
 copyProps(window, global);
-
-// Hack to load cockpit.js
-window.cockpit = require('../assets/cockpit');
-global.document.scripts = [{src: ""}]
