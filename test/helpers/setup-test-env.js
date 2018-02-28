@@ -1,6 +1,16 @@
 const { JSDOM } = require('jsdom');
 
-const jsdom = new JSDOM('<!doctype html><html><body></body></html>');
+// const jsdom = new JSDOM('<!doctype html><html><body></body></html>');
+
+const jsdom = new JSDOM(`
+<html lang="en">
+    <body>
+        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <div id="app"></div>
+    </body>
+</html>
+`)
+
 const { window } = jsdom;
 
 function copyProps(src, target) {
@@ -22,3 +32,7 @@ global.navigator = {
   userAgent: 'node.js',
 };
 copyProps(window, global);
+
+// Hack to load cockpit.js
+window.cockpit = require('../assets/cockpit');
+global.document.scripts = [{src: ""}]

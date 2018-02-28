@@ -47,7 +47,7 @@ class App extends React.Component<RowCols, {}> {
             throw Error('Subject was null');
         }
 
-        //
+        // Combine these into a request that we can submit over a socket
         return Rx.Observable.merge( arg$.map(a => new Object({tcargs: a}))
                                   , testcase$.map(t => new Object({testcase: t}))
                                   , mapping$.map(m => new Object({mapping: m})))
