@@ -7,6 +7,7 @@ const jsdom = new JSDOM(`
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="app"></div>
+        <script src="../assets/cockpit.js"></script>
     </body>
 </html>
 `)
@@ -29,8 +30,7 @@ window.Math = Math;
 global.window = window;
 global.document = window.document;
 // Hack to load cockpit.js into jsdom
-// global.cockpit = require('../assets/cockpit');
-// global.document.scripts = [{src: ""}]
+global.cockpit = require('../assets/cockpit');
 global.navigator = {
   userAgent: 'node.js',
 };

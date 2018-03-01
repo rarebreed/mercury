@@ -46,7 +46,8 @@ are some things we can do to make the product easier to test and debug?
 ## Why websockets?
 
 Well, for starters, that's how cockpit (the browser [SPA][-spa]) talks to cockpit (the server, cockpit-ws). All the
-messaging going back and forth is being done as websockets. Therefore, it's not a bad thing to learn about them.
+[messaging going back and forth][-cp-proto] is being done as websockets. Therefore, it's not a bad thing to learn about
+them.
 
 Secondly, websockets, unlike REST, are bidirectional. This enables websockets to do things that traditional http can't
 (though [Server Sent Events][-SSE] can touch on). Websockets are really nice when you want real-time data to be pushed
@@ -90,7 +91,10 @@ this stream of ever flowing data.
 Mobx hides a lot of this complexity, but I've also heard that is its problem.  There's too much "magic" going on.  
 And inevitably, when you start debugging stuff, you need to know how those inner layers work anyway.
 
-I will show an actual rxjs example at the end for how to use rxjs for state management 
+I will show an actual rxjs example at the end for how to use rxjs for state management.  But for now, take a look at this
+high level diagram to get an idea of how you can use rxjs for state management
+
+![Using rxjs for state management][rxjs-dispatch]
 
 ## Why typescript?  What about flow or plain old es2016-es2018?
 
@@ -103,10 +107,14 @@ configuration in your webpack config than with typescript.
 
 But static typing is definitely the way to go. Not only does it enforce documentation (how many times have you looked at
 python code and gone, "now, what am I supposed to pass into that function?"). Any claims that dynamic languages are
-faster to program in rings hollow, once you factor in the head scratching of what tyoes to pass in, grokking the source
-code to figure it out, writing unit tests that are poor type checkers anyways, going through a debugger because you hit
-a bug that could have been found with a compiler, and dealing with an irate customer, because your code hit a runtime
-issue that could have been caught at runtime.
+faster to program in rings hollow, once you factor in:
+
+- the head scratching of what types to pass in (I'm especially looking at you **kwargs)
+- grokking the source code to figure it out
+- writing unit tests that are poor type checkers anyways
+- making sure you keep your dosctrings up to date with refactorings (you do document your functions dont you?)
+- going through a debugger because you hit a bug that could have been found with a compiler
+- dealing with an irate customer, because your code hit a runtime issue that could have been caught at runtime.
 
 Just say no to dynamic programming. And remember, friends dont let friends dynamic type.
 
@@ -697,8 +705,10 @@ style tests to know when an element appears other than to waste cycles polling.
 [-ws]: https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
 [-set-state]: https://reactjs.org/docs/react-component.html#setstate
 [-react-evts]: https://reactjs.org/docs/state-and-lifecycle.html
+[-cp-protp]: http://cockpit-project.org/blog/protocol-for-web-access-to-system-apis.html
 [startup]: https://github.com/rarebreed/mercury/blob/master/docs/images/Initial.png
 [clearedout]: https://github.com/rarebreed/mercury/blob/master/docs/images/Cleared-before-submit.png
 [nothing-happened]: https://github.com/rarebreed/mercury/blob/master/docs/images/ChangedText-Nothing-In-Console.png
 [clicked-submit]: https://github.com/rarebreed/mercury/blob/master/docs/images/Clicked-Submit.png
 [onchange]: https://github.com/rarebreed/mercury/blob/master/docs/images/OnChange-Shows-In-Console.png
+[rxjs-dispatch]: https://github.com/rarebreed/mercury/blob/master/docs/images/rxjs-state-management.png

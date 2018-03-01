@@ -140,3 +140,11 @@ export const makeRequest = ( op: string
         data: JSON.stringify(data, null, 2)
     };
 };
+
+export type UMBData = {
+    topic: string;
+    selector: string;
+    'bus-address': string;
+    action: string;
+    tag: string;
+};

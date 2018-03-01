@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as Rx from 'rxjs/Rx';
-// import '../assets/css/default.css';
 import { defaultXml, defaultMapping } from '../libs/default-values';
 
 export interface MTProps {
@@ -60,32 +59,33 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
 
     defaultArgs = (): string => {
         let args = {
-            xunit: {
-                importer: {
-                    xml: '/home/stoner/Projects/testpolarize/test-output/testng-polarion.xml',
-                    args: '/home/stoner/polarizer-xunit.json' 
-                },
-                generate: {
-                    // tslint:disable-next-line:max-line-length
-                    focus: '/home/stoner/Projects/testpolarize/test-output/junitreports/TEST-com.github.redhatqe.rhsm.testpolarize.TestReq.xml',
-                    args: '/home/stoner/polarizer-xunit.json',
-                    mapping: '/home/stoner/Projects/testpolarize/mapping.json'
+            project: 'PLATTP',
+            author: 'stoner',
+            packages: [
+              ''
+            ],
+            servers: {
+                polarion: {
+                    url: 'https://polarion-devel.engineering.redhat.com/polarion',
+                    user: '',
+                    password: ''
                 }
             },
             testcase: {
-                importer: {
-                    xml: '/home/stoner/Projects/testpolarize/test-output/testng-polarion.xml',
-                    args: '/home/stoner/polarizer-testing-testcase.json',
-                    mapping: '/home/stoner/Projects/testpolarize/mapping.json'
+                endpoint: '/import/testcase',
+                timeout: 300000,
+                enabled: false,
+                selector: {
+                    name: 'rhsm_qe',
+                    value: 'testcase_importer'
                 },
-                mapper: {
-                    focus: '/home/stoner/Projects/testpolarize/build/libs/testpolarize-0.1.0-SNAPSHOT-all.jar',
-                    mapping: '/home/stoner/Projects/testpolarize/mapping.json',
-                    args: '/home/stoner/polarizer-testcase.json'
+                title: {
+                    prefix: '',
+                    suffix: ''
                 }
             }
         };
-        
+          
         return JSON.stringify(args, null, 2);
     }
 

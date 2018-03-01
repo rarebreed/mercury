@@ -3,8 +3,24 @@ import * as React from 'react';
 import { mount } from 'enzyme';
 import { MultiText } from '../app/components/MultiText';
 
+// TODO: Make a .d.ts file for cockpit
+interface Cockpit {
+    cockpit: any;
+}
+
+type MonkeyPatch = Window & Cockpit;
+
+const makePatch = (win: Window = window): MonkeyPatch => {
+    let w = {cockpit: null};
+    return Object.assign(w, win);
+};
+
+const windoe = makePatch();
+const cockpit = windoe.cockpit;
+
 test('Test MultiText textarea', (t) => {
     const wrapper = mount(<MultiText id="test" label="Just a test" rows={30} cols={80}/>);
+    console.log(cockpit);
     // Make sure when calling this.setState, we pass the callback
     let state$ = MultiText.emitters.get('test');
     if (state$ === undefined) {
