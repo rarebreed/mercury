@@ -2,7 +2,7 @@
     "extends": ["tslint-react"],
     "rules": {
         "align": [
-            true,
+            false,
             "parameters",
             "arguments",
             "statements"
@@ -24,7 +24,7 @@
         "label-position": true,
         "max-line-length": [ true, 120 ],
         "member-ordering": true,
-        "no-any": true,
+        "no-any": false,
         "no-arg": true,
         "no-bitwise": true,
         "no-console": [
@@ -52,7 +52,6 @@
         "one-line": [
             true,
             "check-catch",
-            "check-else",
             "check-open-brace",
             "check-whitespace"
         ],

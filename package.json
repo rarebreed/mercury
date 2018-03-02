@@ -42,7 +42,8 @@
   "scripts": {
     "build": "webpack",
     "serve": "tsc server.ts && webpack && node server.js",
-    "test": "tsc && ava"
+    "test": "tsc && ava",
+    "compile": "tsc"
   },
   "ava": {
     "files": [
