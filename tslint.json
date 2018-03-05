@@ -1,5 +1,5 @@
 {
-    "extends": ["tslint-react"],
+    "extends": ["tslint-react", "rxjs-tslint-rules"],
     "rules": {
         "align": [
             false,
@@ -57,6 +57,18 @@
         ],
         "quotemark": [true, "single", "jsx-double"],
         "radix": true,
+        "rxjs-add": { "severity": "error" },
+        "rxjs-no-unused-add": { "severity": "error" },
+        "rxjs-finnish": {
+            "options": [{
+              "functions": false,
+              "methods": false,
+              "parameters": false,
+              "properties": false,
+              "variables": true
+            }],
+            "severity": "error"
+        },
         "semicolon": [true, "always"],
         "switch-default": true,
 

@@ -1,6 +1,8 @@
 import * as React from 'react';
-import * as Rx from 'rxjs/Rx';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/map';
 import { defaultXml, defaultMapping } from '../libs/default-values';
+import { dispatch, Dispatch } from '../libs/state-management';
 
 export interface MTProps {
     id: string;
@@ -19,18 +21,20 @@ export interface MTProps {
  * for the current state come from this.emitter
  */
 export class MultiText extends React.Component<MTProps, {args: string}> {
-    static emitters: Map<string, Rx.BehaviorSubject<string>> = new Map();
-    state$: Rx.BehaviorSubject<string>;
-    mountState: Rx.BehaviorSubject<Date>;
+    static emitters: Map<string, BehaviorSubject<string>> = new Map();
+    state$: BehaviorSubject<string>;
+    mountState: BehaviorSubject<Date>;
+    dispatch: Dispatch;
 
     constructor(props: MTProps) {
         super(props);
 
+        this.dispatch = dispatch;
         this.state = {
             args: this.loadDefaultArgs()
         };
 
-        this.mountState = new Rx.BehaviorSubject(new Date());
+        this.mountState = new BehaviorSubject(new Date());
         this.state$ = this.makeEmitter();
         // this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
         MultiText.emitters.set(props.id, this.state$);
@@ -39,7 +43,7 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
     }
 
     makeEmitter = () => {
-        let obs = new Rx.BehaviorSubject(this.state.args);
+        let obs = new BehaviorSubject(this.state.args);
         // TODO:  Store or persist state.
         return obs;
     }
