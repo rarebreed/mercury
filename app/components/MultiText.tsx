@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/map';
-import { defaultXml, defaultMapping } from '../libs/default-values';
-import { dispatch, Dispatch, StreamInfo } from '../libs/state-management';
+import { defaultXml, defaultMapping } from '../libs/default.values';
+import { dispatch, Dispatch, StreamInfo } from '../libs/state.management';
 
 export interface MTProps {
     id: string;

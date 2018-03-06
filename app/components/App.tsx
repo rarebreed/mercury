@@ -2,8 +2,8 @@ import * as React from 'react';
 import * as Rx from 'rxjs/Rx';
 import { MultiText } from './MultiText';
 import { FilePicker } from './FilePicker';
-import { makeRequest, TextMessage } from '../libs/default-values';
-import { Dispatch, dispatch, getMatched, lookup, WStoStreamBridge, Lookup } from '../libs/state-management';
+import { makeRequest, TextMessage } from '../libs/default.values';
+import { Dispatch, dispatch, getMatched, lookup, WStoStreamBridge, Lookup } from '../libs/state.management';
 
 interface RowCols {
     cols: number;
@@ -33,6 +33,7 @@ export class App extends React.Component<RowCols, {}> {
         this.bridge = new WStoStreamBridge(dispatch, 'ws://localhost:4001/ws');
 
         this.dispatch = dispatch;
+        // Shows how to hook into another component's Stream and react to it
         let found = getMatched(lookup({
             cName: 'testcase',
             sName: 'mount-state'
@@ -41,6 +42,7 @@ export class App extends React.Component<RowCols, {}> {
         if (found !== null) {
             found.get()[1].stream.subscribe(n => {
                 console.log('The testcase component was mounted');
+                // TODO: look for all the mount-states and bridge them
             });
         }
 
@@ -106,12 +108,13 @@ export class App extends React.Component<RowCols, {}> {
      * over the websocket to polarizer
      */
     onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        // FIXME
         let search = {
             cName: 'args',
             sName: 'textarea'
         } as Lookup;
         this.bridge.bridge<string>(search);
-        
+
         // Accumulate all textState Observables emitted data
         if (this.cancel.get('testcase') === undefined) {
             this.message$ = this.accumulateState();

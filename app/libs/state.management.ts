@@ -56,6 +56,9 @@ type LookupResult<T> = Error | Array<[number, StreamInfo<T>]>;
  * Will throw an error if no fields at all defined in lookup, or if using one of the field name and the index type
  * but they dont both match.  It returns an array of [number, StreamInfo<T>] tuples.  It returns this format so that
  * entries can be deleted (using this.stream.delete).  (note however that only one element can be deleted at a time)
+ * 
+ * TODO: This is a poor way to find the stream we need.  It's a O(n) (actually (O(n*3))), but we should probably
+ * store this.streams as nested maps: Map<string, Map<string, StreamInfo<any>>>
  */
 export const lookup = <T>(search: Lookup, 
                           streams: List<StreamInfo<any>>): LookupResult<T> => {
@@ -73,11 +76,11 @@ export const lookup = <T>(search: Lookup,
     });
 
     let comp = cName ? cName :
-                index ? index.component : null;
+               index ? index.component : null;
     let streamName = sName ? sName :
-                        index ? index.streamName : null;
+                     index ? index.streamName : null;
     let streamType = sType ? sType :
-                        index ? index.streamType : null;
+                     index ? index.streamType : null;
 
     let zipped = Range().zip(streams);
     let filtered: [number, StreamInfo<T>][] = zipped.toJS();
@@ -137,10 +140,13 @@ export class Dispatch {
     }
 }
 
+/**
+ * A Websocket to rxjs Observable bridge
+ */
 export class WStoStreamBridge {
     ws: WebSocket;
     dispatch: Maybe<Dispatch>;
-    streams: List<StreamInfo<any>>;
+    streams: List<StreamInfo<any>> = List();
 
     constructor(disp?: Dispatch, url: string = 'ws://localhost:9000/') {
         if (disp === undefined) {
@@ -152,6 +158,17 @@ export class WStoStreamBridge {
         this.ws = new WebSocket(url);
     }
 
+    /**
+     * Adds a StreamInfo object to thee internal this.streams.
+     * 
+     * Can be used if a StreamInfo type is already available, or if there is no dispatch.  This method
+     * will subscribe to the StreamInfo.stream, and forward the items it receives over the websocket
+     * 
+     * FIXME:  we need to take care here of backpressure.  Since websockets are slower than in-memory 
+     * data structures, we need to be mindful of this.  Not to mention we can funnel several Observable
+     * streams to a single websocket.  Because of this, we may want to to debounce some streams.  for example
+     * we may want to debounce or accumulate events and send them at once.
+     */
     add = <T>(si: StreamInfo<T>) => {
         let stream$ = si.stream as Subject<T>;
         stream$.subscribe(
@@ -173,7 +190,7 @@ export class WStoStreamBridge {
     }
 
     /**
-     * looks up an Observable in dispatch, and forwards any events over the websocket
+     * Looks up an Observable in dispatch and adds to its internal this.streams
      */
     bridge = <T>(search: Lookup) => {
         console.log('In WStoStreamBridge: bridging');
@@ -191,7 +208,7 @@ export class WStoStreamBridge {
     }
 
     /**
-     * We only unbridge from th internel this.streams, not from this.dispatch.streams
+     * We only unbridge from the internel this.streams, not from this.dispatch.streams
      */
     unbridge = (search: Lookup) => {
         let matches = lookup(search, this.streams);
