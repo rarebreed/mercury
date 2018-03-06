@@ -6,10 +6,8 @@
 
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { List, Range } from 'immutable';
 import { Just, Maybe } from './func';
-import { WebSocketSubject } from 'rxjs/observable/dom/WebSocketSubject';
 
 /** 
  * Used as a data to describe metadata about an Observable
@@ -142,7 +140,7 @@ export class Dispatch {
 export class WStoStreamBridge {
     ws: WebSocket;
     dispatch: Maybe<Dispatch>;
-    streams: List<StreamInfo<any>>
+    streams: List<StreamInfo<any>>;
 
     constructor(disp?: Dispatch, url: string = 'ws://localhost:9000/') {
         if (disp === undefined) {
@@ -163,12 +161,12 @@ export class WStoStreamBridge {
             err => {
                 this.ws.send(JSON.stringify({
                     status: 'error', ...si
-                }, null, 2))
+                }, null, 2));
             },
             () => {
                 this.ws.send(JSON.stringify({
                     status: 'completed', ...si
-                }))
+                }));
             }
         );
         this.streams = this.streams.push(si);
@@ -178,23 +176,27 @@ export class WStoStreamBridge {
      * looks up an Observable in dispatch, and forwards any events over the websocket
      */
     bridge = <T>(search: Lookup) => {
+        console.log('In WStoStreamBridge: bridging');
         if (this.dispatch === null) {
-            throw new Error('No dispatch assigned')
+            throw new Error('No dispatch assigned');
         }
-        let stream = getMatched(lookup(search, this.dispatch.get().streams))
+        let stream = getMatched(lookup(search, this.dispatch.get().streams));
         if (stream !== null) {
             let si = stream.get()[1] as StreamInfo<T>;
             this.add(si);
+        }
+        else {
+            console.log('Found no matches for bridge');
         }
     }
 
     /**
      * We only unbridge from th internel this.streams, not from this.dispatch.streams
      */
-    unbridge = <T>(search: Lookup) => {
+    unbridge = (search: Lookup) => {
         let matches = lookup(search, this.streams)
         if (matches instanceof Error) {
-            console.log('No matches found to unbrdige')
+            console.log('No matches found to unbridge')
             return;
         }
         console.log(`Deleting ${JSON.stringify(matches, null, 2)}`)

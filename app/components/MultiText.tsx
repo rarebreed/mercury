@@ -2,7 +2,7 @@ import * as React from 'react';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/map';
 import { defaultXml, defaultMapping } from '../libs/default-values';
-import { dispatch, Dispatch, StreamInfo, Lookup } from '../libs/state-management';
+import { dispatch, Dispatch, StreamInfo } from '../libs/state-management';
 
 export interface MTProps {
     id: string;
@@ -14,14 +14,17 @@ export interface MTProps {
 /** 
  * Component for a textarea field with a submit button
  * 
- * Note that this uses rxjs with the emitter field.  This is used to read the actual current state of the 
- * component.  In other words, interested parties should subscribe to this.emitter, instead of trying to 
- * access this.state.  This is because setState is asynchronous, so this.state may not actually be updated
+ * Note that this uses rxjs for state management  Observables are registered to a (singleton) Dispatch
+ * (for example the textarea state is an Observable stream, and this stream is registered with the
+ * central disatch).  Other compponents that need access to the changing state should lookup in the 
+ * central dispatch this component's Observable streams that were registered.  Then they can subscribe
+ * to these streams as usual.  Other components should directly access MultiText's this.state 
+ * 
+ * This is because setState is asynchronous, so this.state may not actually be updated
  * until react does some things.  Just as writes to this.state has to go through this.setState, all reads
  * for the current state come from this.emitter
  */
 export class MultiText extends React.Component<MTProps, {args: string}> {
-    // static emitters: Map<string, BehaviorSubject<string>> = new Map();
     state$: BehaviorSubject<string>;
     mountState: BehaviorSubject<Date>;
     dispatch: Dispatch;
@@ -48,13 +51,15 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         this.dispatch.register(mountSI);
         this.dispatch.register(stateSI);
 
-        let lookup: Lookup = {
+        /*
+        let search: Lookup = {
             cName: this.props.id,
             sName: 'textarea',
             sType: 'string'
         };
-        let found = this.dispatch.lookup(lookup);
+        let found = lookup(search, this.dispatch.streams);
         console.debug(`Got this for found: ${JSON.stringify(found, null, 2)}`);
+        */
     }
 
     /**

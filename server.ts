@@ -3,6 +3,9 @@ const webpackMiddleware = require('webpack-dev-middleware');
 const webpack = require('webpack');
 const webpackConfig = require('./webpack.config.js');
 const path = require('path');
+const WS = require('ws');
+const http = require('http');
+const url = require('url');
 
 const makeapp = () => {
     // tslint:disable-next-line:no-shadowed-variable
@@ -22,4 +25,17 @@ const makeapp = () => {
 };
 
 const app = makeapp();
-let service = app.listen(4001, () => console.log('Running mercury service at localhost:4001'));
+const server = http.createServer(app);
+const wss = new WS.Server({ path: '/ws', server });
+
+wss.on('connection', (ws, req) => {
+    const location = url.parse(req.url, true);
+    // You might use location.query.access_token to authenticate or share sessions
+    // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
+  
+    ws.on('message', (message) => {
+      console.log('received: %s', message);
+    }); 
+});
+
+let service = server.listen(4001, () => console.log('Running mercury service at localhost:4001'));

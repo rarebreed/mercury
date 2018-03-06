@@ -3,7 +3,7 @@ import * as Rx from 'rxjs/Rx';
 import { MultiText } from './MultiText';
 import { FilePicker } from './FilePicker';
 import { makeRequest, TextMessage } from '../libs/default-values';
-import { Dispatch, dispatch, getMatched } from '../libs/state-management';
+import { Dispatch, dispatch, getMatched, lookup, WStoStreamBridge, Lookup } from '../libs/state-management';
 
 interface RowCols {
     cols: number;
@@ -21,6 +21,7 @@ export class App extends React.Component<RowCols, {}> {
     umbOutput: string;
     umbMsg$: Rx.Observable<string>;
     dispatch: Dispatch;
+    bridge: WStoStreamBridge;
 
     constructor(props: RowCols) {
         super(props);
@@ -29,12 +30,13 @@ export class App extends React.Component<RowCols, {}> {
         this.cancel = new Map();
         this.mount$ = new Rx.BehaviorSubject(0);
         this.ws = new Map();
+        this.bridge = new WStoStreamBridge(dispatch, 'ws://localhost:4001/ws');
 
         this.dispatch = dispatch;
-        let found = getMatched(this.dispatch.lookup({
+        let found = getMatched(lookup({
             cName: 'testcase',
             sName: 'mount-state'
-        }));
+        }, this.dispatch.streams));
         console.log(`in Aop: mountstate stream: ${found}`);
         if (found !== null) {
             found.get()[1].stream.subscribe(n => {
@@ -45,7 +47,6 @@ export class App extends React.Component<RowCols, {}> {
         this.dispatch.info.subscribe(evt => {
             console.log(`In App, Got a Dispatch event: ${JSON.stringify(evt, null, 2)}`);
         });
-
     }
 
     componentDidMount() {
@@ -62,9 +63,9 @@ export class App extends React.Component<RowCols, {}> {
     accumulateState = () => {
         console.log('Getting the state');
         // Look up in dispatch the Observables we need
-        let args = getMatched<string>(this.dispatch.lookup({cName: 'args', sName: 'textarea'}));
-        let testcase = getMatched<string>( this.dispatch.lookup({cName: 'testcase', sName: 'textarea'}));
-        let mapping = getMatched<string>(this.dispatch.lookup({cName: 'mapping', sName: 'textarea'}));
+        let args = getMatched<string>(lookup({cName: 'args', sName: 'textarea'}, this.dispatch.streams));
+        let testcase = getMatched<string>(lookup({cName: 'testcase', sName: 'textarea'}, this.dispatch.streams));
+        let mapping = getMatched<string>(lookup({cName: 'mapping', sName: 'textarea'}, this.dispatch.streams));
         
         // Sucks that typescript doesn't have pattern matching.  This is fugly
         if (args === null || testcase === null || mapping === null) {
@@ -105,6 +106,12 @@ export class App extends React.Component<RowCols, {}> {
      * over the websocket to polarizer
      */
     onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        let search = {
+            cName: 'args',
+            sName: 'textarea'
+        } as Lookup;
+        this.bridge.bridge<string>(search);
+        
         // Accumulate all textState Observables emitted data
         if (this.cancel.get('testcase') === undefined) {
             this.message$ = this.accumulateState();
