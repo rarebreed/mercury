@@ -8,7 +8,8 @@ import 'rxjs/add/operator/skip';
 const Adapter = require('enzyme-adapter-react-16');
 configure({ adapter: new Adapter() });
 
-test('Test MultiText textarea', (done) => {
+/*
+xtest('Test MultiText textarea', (done) => {
     const wrapper = mount(<MultiText id="test" label="Just a test" rows={30} cols={80}/>);
     console.log(wrapper);
     // Make sure when calling this.setState, we pass the callback
@@ -30,3 +31,4 @@ test('Test MultiText textarea', (done) => {
             fail('Error in MultiText subject');
     });
 });
+*/

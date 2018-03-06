@@ -2,7 +2,7 @@ import * as React from 'react';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/map';
 import { defaultXml, defaultMapping } from '../libs/default-values';
-import { dispatch, Dispatch } from '../libs/state-management';
+import { dispatch, Dispatch, StreamInfo, Lookup } from '../libs/state-management';
 
 export interface MTProps {
     id: string;
@@ -21,31 +21,52 @@ export interface MTProps {
  * for the current state come from this.emitter
  */
 export class MultiText extends React.Component<MTProps, {args: string}> {
-    static emitters: Map<string, BehaviorSubject<string>> = new Map();
+    // static emitters: Map<string, BehaviorSubject<string>> = new Map();
     state$: BehaviorSubject<string>;
     mountState: BehaviorSubject<Date>;
     dispatch: Dispatch;
 
     constructor(props: MTProps) {
         super(props);
-
+        this.componentDidMount.bind(this);
+        // Get the dispatch set up
         this.dispatch = dispatch;
+        this.dispatch.info.subscribe(action => {
+            console.log(`In MultiText, Got a dispatch event: ${JSON.stringify(action, null, 2)}`);
+        });
+        
         this.state = {
             args: this.loadDefaultArgs()
         };
 
-        this.mountState = new BehaviorSubject(new Date());
-        this.state$ = this.makeEmitter();
-        // this.emitter.subscribe(n => console.log(`Got a new value:\n${n}`));
-        MultiText.emitters.set(props.id, this.state$);
+        // Create all our StreamInfo types so we can register them to Dispatch
+        let mountSI = this.makeStreamInfo('mount-state', 'Date', new Date());
+        this.mountState = mountSI.stream as BehaviorSubject<Date>;
+        let stateSI = this.makeStreamInfo('textarea', 'string', this.state.args);
+        this.state$ = stateSI.stream as BehaviorSubject<string>;
 
-        this.componentDidMount.bind(this);
+        this.dispatch.register(mountSI);
+        this.dispatch.register(stateSI);
+
+        let lookup: Lookup = {
+            cName: this.props.id,
+            sName: 'textarea',
+            sType: 'string'
+        };
+        let found = this.dispatch.lookup(lookup);
+        console.debug(`Got this for found: ${JSON.stringify(found, null, 2)}`);
     }
 
-    makeEmitter = () => {
-        let obs = new BehaviorSubject(this.state.args);
-        // TODO:  Store or persist state.
-        return obs;
+    /**
+     * Creates a StreamInfo type with BehaviorSubject
+     */
+    makeStreamInfo = <T extends {}>(sName: string, sType: string, start: T) => {
+        return {
+            component: this.props.id,
+            streamName: sName,
+            streamType: sType,
+            stream: new BehaviorSubject(start)
+        } as StreamInfo<T>;
     }
 
     // Note:  If you dont write these methods with fat arrow style, _this_ is not bound correctly when called
@@ -58,6 +79,7 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
     }
 
     componentDidMount() {
+        console.log(`Mounted MultiText ${this.props.id}`);
         this.mountState.next(new Date());
     }
 

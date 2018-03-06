@@ -3,6 +3,7 @@ import * as Rx from 'rxjs/Rx';
 import { MultiText } from './MultiText';
 import { FilePicker } from './FilePicker';
 import { makeRequest, TextMessage } from '../libs/default-values';
+import { Dispatch, dispatch, getMatched } from '../libs/state-management';
 
 interface RowCols {
     cols: number;
@@ -19,6 +20,7 @@ export class App extends React.Component<RowCols, {}> {
     ws: Map<string, WebSocket>;
     umbOutput: string;
     umbMsg$: Rx.Observable<string>;
+    dispatch: Dispatch;
 
     constructor(props: RowCols) {
         super(props);
@@ -27,6 +29,23 @@ export class App extends React.Component<RowCols, {}> {
         this.cancel = new Map();
         this.mount$ = new Rx.BehaviorSubject(0);
         this.ws = new Map();
+
+        this.dispatch = dispatch;
+        let found = getMatched(this.dispatch.lookup({
+            cName: 'testcase',
+            sName: 'mount-state'
+        }));
+        console.log(`in Aop: mountstate stream: ${found}`);
+        if (found !== null) {
+            found.get()[1].stream.subscribe(n => {
+                console.log('The testcase component was mounted');
+            });
+        }
+
+        this.dispatch.info.subscribe(evt => {
+            console.log(`In App, Got a Dispatch event: ${JSON.stringify(evt, null, 2)}`);
+        });
+
     }
 
     componentDidMount() {
@@ -42,16 +61,22 @@ export class App extends React.Component<RowCols, {}> {
      */
     accumulateState = () => {
         console.log('Getting the state');
-        // merge the three Subjects into one stream
-        let arg$ = MultiText.emitters.get('args');
-        let testcase$ = MultiText.emitters.get('testcase');
-        let mapping$ = MultiText.emitters.get('mapping');
-        if (arg$ === undefined || testcase$ === undefined || mapping$ === undefined) {
+        // Look up in dispatch the Observables we need
+        let args = getMatched<string>(this.dispatch.lookup({cName: 'args', sName: 'textarea'}));
+        let testcase = getMatched<string>( this.dispatch.lookup({cName: 'testcase', sName: 'textarea'}));
+        let mapping = getMatched<string>(this.dispatch.lookup({cName: 'mapping', sName: 'textarea'}));
+        
+        // Sucks that typescript doesn't have pattern matching.  This is fugly
+        if (args === null || testcase === null || mapping === null) {
             throw Error('Subject was null');
         }
+        console.log('Getting actual streams');
+        let args$ = args.get()[1].stream as Rx.Observable<string>;
+        let testcase$ = testcase.get()[1].stream as Rx.Observable<string>;
+        let mapping$ = mapping.get()[1].stream as Rx.Observable<string>;
 
         // Combine these into a request that we can submit over a socket
-        return Rx.Observable.merge( arg$.map(a => new Object({tcargs: a}))
+        return Rx.Observable.merge( args$.map(a => new Object({tcargs: a}))
                                   , testcase$.map(t => new Object({testcase: t}))
                                   , mapping$.map(m => new Object({mapping: m})))
             .do(i => console.log(`Got new item: ${i}`))

@@ -12,13 +12,13 @@ import { List, Range } from 'immutable';
  */
 export interface Record {
     component: string;   // name of the component the stream belongs to
-    streamName: string;  
+    streamName: string;
     streamType: string;
     action?: 'mounted' | 'unmounted';
 }
 
 export interface StreamInfo<T> extends Record {
-    stream: Observable<T>;
+    stream: Observable<T> | Subject<T>;
 }
 
 export class Just<T> {
@@ -37,9 +37,26 @@ export type Maybe<T> = Just<T> | null;
 export interface Lookup {
     cName?: string;
     sName?: string;
-    sType?: string; 
+    sType?: string;
     index?: Record;
 }
+
+type matcher<T> = [number, StreamInfo<T>][] 
+                | Error;
+export const  getMatched = <T>(matched: matcher<T>) => {
+    if (matched instanceof Error) {
+        return null;
+    }
+
+    if (matched.length === 0) {
+        return null;
+    }
+    if (matched.length > 1) {
+        return null;
+    }
+
+    return new Just<[number, StreamInfo<T>]>(matched[0]);
+};
 
 export class Dispatch {
     streams: List<StreamInfo<any>>;
@@ -63,9 +80,14 @@ export class Dispatch {
     }
 
     /**
+     * Filters the List of StreamInfo from this.streams based on the data in lookup
      * 
+     * Will throw an error if no fields at all defined in lookup, or if using one of the field name and the index type
+     * but they dont both match.  It returns an array of [number, StreamInfo<T>] tuples.  It returns this format so that
+     * entries can be deleted (using this.stream.delete).  (note however that only one element can be deleted at a time)
      */
-    lookup = <T>(lookup: Lookup) => {
+    lookup = <T>(lookup: Lookup): Error 
+                                | Array<[number, StreamInfo<T>]> => {
         let {cName, sName, sType, index} = lookup;
         if (cName === undefined && sName === undefined && sType === undefined && index === undefined) {
             return Error('Must include at least one parameter of either cName, sName, sType or index');
@@ -79,11 +101,11 @@ export class Dispatch {
             }
         });
 
-        let comp = cName ? cName : 
+        let comp = cName ? cName :
                    index ? index.component : null;
-        let streamName = sName ? sName : 
+        let streamName = sName ? sName :
                          index ? index.streamName : null;
-        let streamType = sType ? sType : 
+        let streamType = sType ? sType :
                          index ? index.streamType : null;
 
         let zipped = Range().zip(this.streams);
@@ -96,8 +118,8 @@ export class Dispatch {
     }
 
     /**
-     * Give a Record type, lookup in this.streams and remove if it is found. 
-     * 
+     * Give a Record type, lookup in this.streams and remove if it is found.
+     *
      * Sends a new emitted record from this.info Subject to let any interested parties know that the
      * StreamMap has been deleted.
      */
@@ -113,7 +135,7 @@ export class Dispatch {
         if (matched.length > 1) {
             return Error('Found more than one match which should not happen');
         }
-        
+
         let [index, toRemove] = matched[0];
         console.log(`Removing ${toRemove} at index ${index}`);
         this.streams.delete(index);
