@@ -57,9 +57,9 @@ type LookupResult<T> = Error | Array<[number, StreamInfo<T>]>;
  * but they dont both match.  It returns an array of [number, StreamInfo<T>] tuples.  It returns this format so that
  * entries can be deleted (using this.stream.delete).  (note however that only one element can be deleted at a time)
  */
-export const lookup = <T>(lookup: Lookup, 
+export const lookup = <T>(search: Lookup, 
                           streams: List<StreamInfo<any>>): LookupResult<T> => {
-    let {cName, sName, sType, index} = lookup;
+    let {cName, sName, sType, index} = search;
     if (cName === undefined && sName === undefined && sType === undefined && index === undefined) {
         return Error('Must include at least one parameter of either cName, sName, sType or index');
     }
@@ -86,7 +86,7 @@ export const lookup = <T>(lookup: Lookup,
             .filter(i => streamType ? i[1].streamType === streamType : true);
 
     return matched;
-}
+};
 
 export class Dispatch {
     streams: List<StreamInfo<any>>;
@@ -156,7 +156,7 @@ export class WStoStreamBridge {
         let stream$ = si.stream as Subject<T>;
         stream$.subscribe(
             next => {
-                this.ws.send(JSON.stringify(next, null, 2))
+                this.ws.send(JSON.stringify(next, null, 2));
             },
             err => {
                 this.ws.send(JSON.stringify({
@@ -194,12 +194,12 @@ export class WStoStreamBridge {
      * We only unbridge from th internel this.streams, not from this.dispatch.streams
      */
     unbridge = (search: Lookup) => {
-        let matches = lookup(search, this.streams)
+        let matches = lookup(search, this.streams);
         if (matches instanceof Error) {
-            console.log('No matches found to unbridge')
+            console.log('No matches found to unbridge');
             return;
         }
-        console.log(`Deleting ${JSON.stringify(matches, null, 2)}`)
+        console.log(`Deleting ${JSON.stringify(matches, null, 2)}`);
         this.streams = this.streams.delete(matches[0][0]);
         if (matches.length > 1) {
             this.unbridge(search);
