@@ -31,24 +31,22 @@ export interface Lookup {
     index?: Record;
 }
 
-type matcher<T> = Array<[number, StreamInfo<T>]>
+export type IndexedStreamInfo<T> = [number, StreamInfo<T>];
+
+type matcher<T> = Array<IndexedStreamInfo<T>>
                 | Error;
-export const  getMatched = <T>(matched: matcher<T>) => {
-    if (matched instanceof Error) {
+export const getMatched = <T>(matched: matcher<T>) => {
+    if (matched instanceof Error)
         return null;
-    }
+    if (matched.length === 0)
+        return null;
+    if (matched.length > 1)
+        return null;
 
-    if (matched.length === 0) {
-        return null;
-    }
-    if (matched.length > 1) {
-        return null;
-    }
-
-    return new Just<[number, StreamInfo<T>]>(matched[0]);
+    return new Just<IndexedStreamInfo<T>>(matched[0]);
 };
 
-type LookupResult<T> = Error | Array<[number, StreamInfo<T>]>;
+type LookupResult<T> = Error | Array<IndexedStreamInfo<T>>;
 
 /**
  * Filters the List of StreamInfo from this.streams based on the data in lookup
@@ -63,16 +61,14 @@ type LookupResult<T> = Error | Array<[number, StreamInfo<T>]>;
 export const lookup = <T>(search: Lookup, 
                           streams: List<StreamInfo<any>>): LookupResult<T> => {
     let {cName, sName, sType, index} = search;
-    if (cName === undefined && sName === undefined && sType === undefined && index === undefined) {
+    if (cName === undefined && sName === undefined && sType === undefined && index === undefined)
         return Error('Must include at least one parameter of either cName, sName, sType or index');
-    }
 
     let check = [[cName, 'component', 'cName'], [sName, 'streamName', 'sName'], [sType, 'streamType', 'sType']];
     check.map(entry => {
         let [name, key, type] = entry;
-        if (name && index && key && (name !== index[key])) {
+        if (name && index && key && (name !== index[key]))
             return Error(`if using ${type} and index, index.${key} must match ${type}`);
-        }
     });
 
     let comp = cName ? cName :
@@ -120,16 +116,14 @@ export class Dispatch {
      */
     unregister = <T>(rec: Record) => {
         let matched = lookup({index: rec} as Lookup, this.streams);
-        if (matched instanceof Error) {
+        if (matched instanceof Error)
             return matched;
-        }
 
-        if (matched.length === 0) {
+        if (matched.length === 0)
             return null;
-        }
-        if (matched.length > 1) {
+
+        if (matched.length > 1)
             return Error('Found more than one match which should not happen');
-        }
 
         let [index, toRemove] = matched[0];
         console.log(`Removing ${toRemove} at index ${index}`);
@@ -149,12 +143,10 @@ export class WStoStreamBridge {
     streams: List<StreamInfo<any>> = List();
 
     constructor(disp?: Dispatch, url: string = 'ws://localhost:9000/') {
-        if (disp === undefined) {
+        if (disp === undefined)
             this.dispatch = null;
-        }
-        else {
+        else
             this.dispatch = new Just(disp);
-        }
         this.ws = new WebSocket(url);
     }
 
@@ -194,17 +186,16 @@ export class WStoStreamBridge {
      */
     bridge = <T>(search: Lookup) => {
         console.log('In WStoStreamBridge: bridging');
-        if (this.dispatch === null) {
+        if (this.dispatch === null)
             throw new Error('No dispatch assigned');
-        }
+
         let stream = getMatched(lookup(search, this.dispatch.get().streams));
         if (stream !== null) {
             let si = stream.get()[1] as StreamInfo<T>;
             this.add(si);
         }
-        else {
+        else
             console.log('Found no matches for bridge');
-        }
     }
 
     /**
@@ -218,9 +209,8 @@ export class WStoStreamBridge {
         }
         console.log(`Deleting ${JSON.stringify(matches, null, 2)}`);
         this.streams = this.streams.delete(matches[0][0]);
-        if (matches.length > 1) {
+        if (matches.length > 1)
             this.unbridge(search);
-        }
     }
 }
 

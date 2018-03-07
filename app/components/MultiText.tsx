@@ -3,10 +3,11 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/map';
 import { defaultXml, defaultMapping } from '../libs/default.values';
 import { dispatch, Dispatch, StreamInfo } from '../libs/state.management';
+const uuid = require('uuid/v4');
 
 export interface MTProps {
     id: string;
-    cols: number;
+    cols: number;  // Not sure if I should remove this.  It will be handled by bulma
     rows: number;
     label: string;
 }
@@ -34,9 +35,6 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         this.componentDidMount.bind(this);
         // Get the dispatch set up
         this.dispatch = dispatch;
-        this.dispatch.info.subscribe(action => {
-            console.log(`In MultiText, Got a dispatch event: ${JSON.stringify(action, null, 2)}`);
-        });
         
         this.state = {
             args: this.loadDefaultArgs()
@@ -50,16 +48,6 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
 
         this.dispatch.register(mountSI);
         this.dispatch.register(stateSI);
-
-        /*
-        let search: Lookup = {
-            cName: this.props.id,
-            sName: 'textarea',
-            sType: 'string'
-        };
-        let found = lookup(search, this.dispatch.streams);
-        console.debug(`Got this for found: ${JSON.stringify(found, null, 2)}`);
-        */
     }
 
     /**
@@ -120,6 +108,26 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
         return JSON.stringify(args, null, 2);
     }
 
+    defaultUMBListener = (): string => {
+        let randUUID = uuid();
+        let data = {
+            topic: `Consumer.client-polarize.${randUUID}.VirtualTopic.qe.ci.>`,
+            selector: '',
+            action: 'start',
+            tag: 'rhsmqe',
+            clientAddress: null,
+            'bus-address': 'rhsmqe.messages'
+        };
+
+        let args = { op: 'umb',
+            type: 'request',
+            data: JSON.stringify(data),
+            tag: 'rhsm-qe',
+            ack: false
+        };
+        return JSON.stringify(args, null, 2);
+    }
+
     loadDefaultArgs(): string {
         switch (this.props.id) {
             case 'args':
@@ -128,6 +136,8 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
                 return defaultXml;
             case 'mapping':
                 return defaultMapping;
+            case 'umb':
+                return this.defaultUMBListener();
             default:
                 return '';
         }
@@ -136,17 +146,25 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
     render() {
         return (
             <div>
-                <div className="label-submit">
-                   <label>{this.props.label}</label>
+                <div className="hero is-info is-small">
+                    <div className="hero-body">
+                        <div className="container">
+                            <h1 className="title">{this.props.label}</h1>
+                        </div>
+                    </div>
+                    <div className="field">
+                        <div className="control">
+                            <textarea
+                                className="textarea"
+                                name={this.props.id}
+                                cols={this.props.cols}
+                                rows={this.props.rows}
+                                value={this.state.args}
+                                onChange={this.handleChange}
+                            />
+                        </div>
+                    </div>
                 </div>
-                <textarea
-                    className="text-submit"
-                    name={this.props.id} 
-                    cols={this.props.cols} 
-                    rows={this.props.rows} 
-                    value={this.state.args} 
-                    onChange={this.handleChange} 
-                />
             </div>
         );
     }

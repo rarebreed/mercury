@@ -48,6 +48,6 @@ module.exports = {
     },
     plugins: [
         // new CleanWebpackPlugin(["dist"]),
-        new ExtractTextPlugin("default.css")
+        new ExtractTextPlugin("bulma.css")
     ]
 }

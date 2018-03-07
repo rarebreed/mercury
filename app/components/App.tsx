@@ -1,54 +1,82 @@
 import * as React from 'react';
 import * as Rx from 'rxjs/Rx';
 import { MultiText } from './MultiText';
-import { FilePicker } from './FilePicker';
+// import { FilePicker } from './FilePicker';
+import { Maybe } from '../libs/func';
 import { makeRequest, TextMessage } from '../libs/default.values';
-import { Dispatch, dispatch, getMatched, lookup, WStoStreamBridge, Lookup } from '../libs/state.management';
+import { Dispatch
+       , dispatch
+       , getMatched
+       , lookup
+       , WStoStreamBridge
+       , Lookup
+       , IndexedStreamInfo } from '../libs/state.management';
 
 interface RowCols {
     cols: number;
     rows: number;
 }
 
-export class App extends React.Component<RowCols, {}> {
-    args: Map<string, MultiText>;
-    textState: Map<string, Rx.BehaviorSubject<string>>;
+export class App extends React.Component<RowCols, {umbOutput: string}> {
+    args: Map<string, MultiText> = new Map();
+    textState: Map<string, Rx.BehaviorSubject<string>> = new Map();
+    cancel: Map<string, Rx.Subscription | null> = new Map();
+    mount$: Rx.BehaviorSubject<number> = new Rx.BehaviorSubject(0);
+    ws: Map<string, WebSocket> = new Map();
+    umbWs: Map<string, WebSocket> = new Map();
+    dispatch: Dispatch = dispatch;
+    bridge: WStoStreamBridge = new WStoStreamBridge(dispatch, 'ws://localhost:4001/ws');
     message$: Rx.Observable<TextMessage>;
     message: TextMessage;
-    cancel: Map<string, Rx.Subscription | null>;
-    mount$: Rx.BehaviorSubject<number>;
-    ws: Map<string, WebSocket>;
-    umbOutput: string;
     umbMsg$: Rx.Observable<string>;
-    dispatch: Dispatch;
-    bridge: WStoStreamBridge;
 
     constructor(props: RowCols) {
         super(props);
-        this.args = new Map();
-        this.textState = new Map();
-        this.cancel = new Map();
-        this.mount$ = new Rx.BehaviorSubject(0);
-        this.ws = new Map();
-        this.bridge = new WStoStreamBridge(dispatch, 'ws://localhost:4001/ws');
 
-        this.dispatch = dispatch;
-        // Shows how to hook into another component's Stream and react to it
-        let found = getMatched(lookup({
-            cName: 'testcase',
-            sName: 'mount-state'
-        }, this.dispatch.streams));
-        console.log(`in Aop: mountstate stream: ${found}`);
-        if (found !== null) {
-            found.get()[1].stream.subscribe(n => {
-                console.log('The testcase component was mounted');
-                // TODO: look for all the mount-states and bridge them
-            });
-        }
+        this.state = {
+            umbOutput: ''
+        };
 
+        // Listen for the dispatch events
         this.dispatch.info.subscribe(evt => {
             console.log(`In App, Got a Dispatch event: ${JSON.stringify(evt, null, 2)}`);
         });
+
+        this.dispatch.info
+                .filter(evt => evt.action === 'mounted')
+                .subscribe(evt => {
+                    switch (evt.component) {
+                        case 'umb':
+                            // Get the UMB output.  At this point, it should be available in Dispatch
+                            this.getStreamFromDispatch<string>({cName: 'umb', sName: 'textarea'}, (found) => {
+                                if (this.umbMsg$ === undefined || this.umbMsg$ === null)
+                                    if (found !== null) {
+                                        this.umbMsg$ = found.get()[1].stream as Rx.Observable<string>;
+                                        console.log(`umbMsg$ stream: ${JSON.stringify(this.umbMsg$)}`);
+                                    }
+                            });
+                            break;
+                        case 'umb-out':
+                            // Get the UMB output.  At this point, it should be available in Dispatch
+                            this.getStreamFromDispatch<string>({cName: 'umb-out', sName: 'textarea'}, (found) => {
+                                let umbOutTextArea = this.textState.get('umb-out-text');
+                                if (umbOutTextArea === undefined)
+                                    if (found !== null) {
+                                        let umbOut$ = found.get()[1].stream as Rx.BehaviorSubject<string>;
+                                        this.textState.set('umb-out-text', umbOut$);
+                                        console.log(`umbOut$ stream: ${JSON.stringify(umbOut$)}`);
+                                    }
+                            });
+                            break;
+                        default:
+                            console.log('');
+                    }
+                });
+    }
+
+    getStreamFromDispatch = <T extends any>(search: Lookup, fn: (indexsi: Maybe<IndexedStreamInfo<T>>) => void) => {
+        let found = getMatched<T>(lookup(search, this.dispatch.streams));
+        fn(found);
     }
 
     componentDidMount() {
@@ -70,9 +98,8 @@ export class App extends React.Component<RowCols, {}> {
         let mapping = getMatched<string>(lookup({cName: 'mapping', sName: 'textarea'}, this.dispatch.streams));
         
         // Sucks that typescript doesn't have pattern matching.  This is fugly
-        if (args === null || testcase === null || mapping === null) {
+        if (args === null || testcase === null || mapping === null)
             throw Error('Subject was null');
-        }
         console.log('Getting actual streams');
         let args$ = args.get()[1].stream as Rx.Observable<string>;
         let testcase$ = testcase.get()[1].stream as Rx.Observable<string>;
@@ -82,7 +109,6 @@ export class App extends React.Component<RowCols, {}> {
         return Rx.Observable.merge( args$.map(a => new Object({tcargs: a}))
                                   , testcase$.map(t => new Object({testcase: t}))
                                   , mapping$.map(m => new Object({mapping: m})))
-            .do(i => console.log(`Got new item: ${i}`))
             .scan((acc, next) => Object.assign(acc, next), {})
             .map(data => {
                 let request = makeRequest('testcase-import', 'na', 'mercury', data);
@@ -93,9 +119,8 @@ export class App extends React.Component<RowCols, {}> {
     setupWebSocket = (key: string, request: TextMessage, url: string = 'ws://localhost:9000/testcase/ws/import') => {
         console.log('Going to send message over websocket');
         let ws = new WebSocket(url);
-        ws.onmessage = (event) => {
-            console.log(event.data);
-        };
+        ws.onmessage = (event) => console.log(event.data);
+
         ws.onopen = (event) => {
             ws.send(JSON.stringify(request));
             console.log('Sent data over websocket');
@@ -107,7 +132,7 @@ export class App extends React.Component<RowCols, {}> {
      * Once all the arguments have been finalized, when the Submit button is clicked, all the data will be sent
      * over the websocket to polarizer
      */
-    onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    onSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
         // FIXME
         let search = {
             cName: 'args',
@@ -121,7 +146,7 @@ export class App extends React.Component<RowCols, {}> {
             let unsub = this.message$.subscribe(
                 n => {
                     this.message = n;
-                    console.log(this.message);
+                    console.debug(this.message);
                 },
                 e => {
                     console.error('Problem getting TextMessage');
@@ -136,37 +161,88 @@ export class App extends React.Component<RowCols, {}> {
         event.preventDefault();
     }
 
-    onUMBSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        if (this.cancel.get('umb') === undefined) {
-            console.error('no websocket');
+    onUMBSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
+        let ws = new WebSocket('ws://localhost:9000/umb/start');
+        console.log(`umb websocket: ${JSON.stringify(ws)}`);
+
+        let check = this.umbWs.get('umb');
+        if (check)
+            check.close();
+
+        ws.onmessage = (evt) => {
+            console.log(evt.data);
+            let umbOut$ = this.textState.get('umb-out-text');
+            this.setState({umbOutput: evt.data}, () => {
+                if (umbOut$ !== undefined)
+                    umbOut$.next(evt.data);
+            });
+        };
+        this.umbWs.set('umb', ws);
+
+        // Check this.umbMsg$
+        console.log(`umbMsg$: ${JSON.stringify(this.umbMsg$)}`);
+        console.log(`umb websocket: ${JSON.stringify(ws)}`);
+        if (this.umbMsg$ !== undefined || this.umbMsg$ !== null) {
+            let subscription = this.umbMsg$.do(s => console.log(s))
+                .subscribe(n => {
+                if (ws !== undefined)
+                    ws.onopen = (evt) => {
+                        console.log(`Connection opened to remote host`);
+                        ws.send(n);
+                    };
+                else
+                    console.error('Websocket for UMB does not exist');
+            });
+            this.cancel.set('umb', subscription);
+            console.log(event);
         }
-        console.log(event);
+        else
+            console.error(`umbMsg$ = ${this.umbMsg$}`);
+    }
+
+    /**
+     * Cancels the UMB connection
+     *
+     * TODO:  Need to add a call to the polarizer-vertx to stop (unless the websocket closing does that for us)
+     */
+    cancelUMB = () => {
+        let subscription = this.cancel.get('umb');
+        if (subscription !== undefined && subscription !== null)
+            subscription.unsubscribe();
+
+        let ws = this.umbWs.get('umb');
+        if (ws !== undefined)
+            ws.close();
+        console.log('Closed UMB connection');
     }
 
     render() {
         return (
-            <div>
-                <div>
-                    <FilePicker 
-                        options={
-                            [['args', 'TestCase JSON args'], 
-                            ['testcase', 'TestCase XML'], 
-                            ['mapping', 'Mapping Json']]
-                        } 
-                    />
-                    <MultiText label="Test Config Args" id="args" {...this.props} />
-                    <MultiText label="TestCase XML" id="testcase" {...this.props} />
-                    <MultiText label="Mapping Json" id="mapping" {...this.props} />
-                    <form onSubmit={this.onSubmit}>
-                        <input type="submit" value="Submit"/>
-                    </form>
+            <div className="columns">
+                <div className="column is-half">
+                    <div className="block">
+                        {/*
+                        <FilePicker
+                            options={
+                                [['args', 'TestCase JSON args'],
+                                ['testcase', 'TestCase XML'],
+                                ['mapping', 'Mapping Json']]
+                            }
+                        />
+                        */}
+                        <MultiText label="Test Config Args" id="args" {...this.props} />
+                        <MultiText label="TestCase XML" id="testcase" {...this.props} />
+                        <MultiText label="Mapping Json" id="mapping" {...this.props} />
+                        <button onClick={this.onSubmit}>Submit</button>
+                    </div>
+                    <div className="field">
+                        <MultiText label="Unified Message Bus config" id="umb" rows={10} cols={50}/>
+                        <button onClick={this.onUMBSubmit}>Submit</button>
+                        <button onClick={this.cancelUMB}>Cancel</button>
+                    </div>
                 </div>
-                <div>
-                    <MultiText label="Unified Message Bus config" id="umb-out" {...this.props}/>
-                    <form onSubmit={this.onUMBSubmit}>
-                        <input type="submit" value="Submit"/>
-                    </form>
-                    <p>Initial</p>
+                <div className="column is-half">
+                    <MultiText label="UMB Output" id="umb-out" rows={100} cols={50}/>
                 </div>
             </div>
         );
