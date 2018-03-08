@@ -4,10 +4,10 @@
  * TODO: Move this into a separate npm module.
  */
 
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import { List, Range } from 'immutable';
-import { Just, Maybe } from './func';
+import { Observable } from 'rxjs/Observable'
+import { Subject } from 'rxjs/Subject'
+import { List, Range } from 'immutable'
+import { Just, Maybe } from './func'
 
 /** 
  * Used as a data to describe metadata about an Observable
@@ -31,22 +31,22 @@ export interface Lookup {
     index?: Record;
 }
 
-export type IndexedStreamInfo<T> = [number, StreamInfo<T>];
+export type IndexedStreamInfo<T> = [number, StreamInfo<T>]
 
 type matcher<T> = Array<IndexedStreamInfo<T>>
-                | Error;
+                | Error
 export const getMatched = <T>(matched: matcher<T>) => {
     if (matched instanceof Error)
-        return null;
+        return null
     if (matched.length === 0)
-        return null;
+        return null
     if (matched.length > 1)
-        return null;
+        return null
 
-    return new Just<IndexedStreamInfo<T>>(matched[0]);
-};
+    return new Just<IndexedStreamInfo<T>>(matched[0])
+}
 
-type LookupResult<T> = Error | Array<IndexedStreamInfo<T>>;
+type LookupResult<T> = Error | Array<IndexedStreamInfo<T>>
 
 /**
  * Filters the List of StreamInfo from this.streams based on the data in lookup
@@ -58,54 +58,54 @@ type LookupResult<T> = Error | Array<IndexedStreamInfo<T>>;
  * TODO: This is a poor way to find the stream we need.  It's a O(n) (actually (O(n*3))), but we should probably
  * store this.streams as nested maps: Map<string, Map<string, StreamInfo<any>>>
  */
-export const lookup = <T>(search: Lookup, 
-                          streams: List<StreamInfo<any>>): LookupResult<T> => {
-    let {cName, sName, sType, index} = search;
+export const lookup = <T>( search: Lookup
+                         , streams: List<StreamInfo<any>>): LookupResult<T> => {
+    let {cName, sName, sType, index} = search
     if (cName === undefined && sName === undefined && sType === undefined && index === undefined)
-        return Error('Must include at least one parameter of either cName, sName, sType or index');
+        return Error('Must include at least one parameter of either cName, sName, sType or index')
 
-    let check = [[cName, 'component', 'cName'], [sName, 'streamName', 'sName'], [sType, 'streamType', 'sType']];
+    let check = [[cName, 'component', 'cName'], [sName, 'streamName', 'sName'], [sType, 'streamType', 'sType']]
     check.map(entry => {
-        let [name, key, type] = entry;
+        let [name, key, type] = entry
         if (name && index && key && (name !== index[key]))
-            return Error(`if using ${type} and index, index.${key} must match ${type}`);
-    });
+            return Error(`if using ${type} and index, index.${key} must match ${type}`)
+    })
 
     let comp = cName ? cName :
-               index ? index.component : null;
+               index ? index.component : null
     let streamName = sName ? sName :
-                     index ? index.streamName : null;
+                     index ? index.streamName : null
     let streamType = sType ? sType :
-                     index ? index.streamType : null;
+                     index ? index.streamType : null
 
-    let zipped = Range().zip(streams);
-    let filtered: [number, StreamInfo<T>][] = zipped.toJS();
+    let zipped = Range().zip(streams)
+    let filtered: [number, StreamInfo<T>][] = zipped.toJS()
     let matched = filtered.filter(i => comp ? i[1].component === comp : true)
             .filter(i => streamName ? i[1].streamName === streamName : true)
-            .filter(i => streamType ? i[1].streamType === streamType : true);
+            .filter(i => streamType ? i[1].streamType === streamType : true)
 
-    return matched;
-};
+    return matched
+}
 
 export class Dispatch {
-    streams: List<StreamInfo<any>>;
-    info: Subject<Record>;
+    streams: List<StreamInfo<any>>
+    info: Subject<Record>
 
     constructor() {
-        this.streams = List();
-        this.info = new Subject();
+        this.streams = List()
+        this.info = new Subject()
     }
 
     register = <T>(smap: StreamInfo<T>) => {
-        this.streams = this.streams.push(smap);
-        let {component, streamName, streamType} = smap;
+        this.streams = this.streams.push(smap)
+        let {component, streamName, streamType} = smap
         let rec = {
             component: component,
             streamName: streamName,
             streamType: streamType,
             action: 'mounted'
-        } as Record;
-        this.info.next(rec);
+        } as Record
+        this.info.next(rec)
     }
 
     /**
@@ -115,22 +115,22 @@ export class Dispatch {
      * StreamMap has been deleted.
      */
     unregister = <T>(rec: Record) => {
-        let matched = lookup({index: rec} as Lookup, this.streams);
+        let matched = lookup({index: rec} as Lookup, this.streams)
         if (matched instanceof Error)
-            return matched;
+            return matched
 
         if (matched.length === 0)
-            return null;
+            return null
 
         if (matched.length > 1)
-            return Error('Found more than one match which should not happen');
+            return Error('Found more than one match which should not happen')
 
-        let [index, toRemove] = matched[0];
-        console.log(`Removing ${toRemove} at index ${index}`);
-        this.streams = this.streams.delete(index);
-        let info = Object.assign({action: 'unmounted'}, rec);
-        this.info.next(info);
-        return toRemove as StreamInfo<T>;
+        let [index, toRemove] = matched[0]
+        console.log(`Removing ${toRemove} at index ${index}`)
+        this.streams = this.streams.delete(index)
+        let info = Object.assign({action: 'unmounted'}, rec)
+        this.info.next(info)
+        return toRemove as StreamInfo<T>
     }
 }
 
@@ -138,16 +138,16 @@ export class Dispatch {
  * A Websocket to rxjs Observable bridge
  */
 export class WStoStreamBridge {
-    ws: WebSocket;
-    dispatch: Maybe<Dispatch>;
-    streams: List<StreamInfo<any>> = List();
+    ws: WebSocket
+    dispatch: Maybe<Dispatch>
+    streams: List<StreamInfo<any>> = List()
 
     constructor(disp?: Dispatch, url: string = 'ws://localhost:9000/') {
         if (disp === undefined)
-            this.dispatch = null;
+            this.dispatch = null
         else
-            this.dispatch = new Just(disp);
-        this.ws = new WebSocket(url);
+            this.dispatch = new Just(disp)
+        this.ws = new WebSocket(url)
     }
 
     /**
@@ -162,56 +162,56 @@ export class WStoStreamBridge {
      * we may want to debounce or accumulate events and send them at once.
      */
     add = <T>(si: StreamInfo<T>) => {
-        let stream$ = si.stream as Subject<T>;
+        let stream$ = si.stream as Subject<T>
         stream$.subscribe(
             next => {
-                this.ws.send(JSON.stringify(next, null, 2));
+                this.ws.send(JSON.stringify(next, null, 2))
             },
             err => {
                 this.ws.send(JSON.stringify({
                     status: 'error', ...si
-                }, null, 2));
+                }, null, 2))
             },
             () => {
                 this.ws.send(JSON.stringify({
                     status: 'completed', ...si
-                }));
+                }))
             }
-        );
-        this.streams = this.streams.push(si);
+        )
+        this.streams = this.streams.push(si)
     }
 
     /**
      * Looks up an Observable in dispatch and adds to its internal this.streams
      */
     bridge = <T>(search: Lookup) => {
-        console.log('In WStoStreamBridge: bridging');
+        console.log('In WStoStreamBridge: bridging')
         if (this.dispatch === null)
-            throw new Error('No dispatch assigned');
+            throw new Error('No dispatch assigned')
 
-        let stream = getMatched(lookup(search, this.dispatch.get().streams));
+        let stream = getMatched(lookup(search, this.dispatch.get().streams))
         if (stream !== null) {
-            let si = stream.get()[1] as StreamInfo<T>;
-            this.add(si);
+            let si = stream.get()[1] as StreamInfo<T>
+            this.add(si)
         }
         else
-            console.log('Found no matches for bridge');
+            console.log('Found no matches for bridge')
     }
 
     /**
      * We only unbridge from the internel this.streams, not from this.dispatch.streams
      */
     unbridge = (search: Lookup) => {
-        let matches = lookup(search, this.streams);
+        let matches = lookup(search, this.streams)
         if (matches instanceof Error) {
-            console.log('No matches found to unbridge');
-            return;
+            console.log('No matches found to unbridge')
+            return
         }
-        console.log(`Deleting ${JSON.stringify(matches, null, 2)}`);
-        this.streams = this.streams.delete(matches[0][0]);
+        console.log(`Deleting ${JSON.stringify(matches, null, 2)}`)
+        this.streams = this.streams.delete(matches[0][0])
         if (matches.length > 1)
-            this.unbridge(search);
+            this.unbridge(search)
     }
 }
 
-export const dispatch = new Dispatch();
+export const dispatch = new Dispatch()

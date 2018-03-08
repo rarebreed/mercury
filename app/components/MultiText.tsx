@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/map';
-import { defaultXml, defaultMapping } from '../libs/default.values';
-import { dispatch, Dispatch, StreamInfo } from '../libs/state.management';
-const uuid = require('uuid/v4');
+import * as React from 'react'
+import { BehaviorSubject } from 'rxjs/BehaviorSubject'
+import 'rxjs/add/operator/map'
+import { defaultXml, defaultMapping } from '../libs/default.values'
+import { dispatch, Dispatch, StreamInfo } from '../libs/state.management'
+const uuid = require('uuid/v4')
 
 export interface MTProps {
     id: string;
@@ -25,29 +25,29 @@ export interface MTProps {
  * until react does some things.  Just as writes to this.state has to go through this.setState, all reads
  * for the current state come from this.emitter
  */
-export class MultiText extends React.Component<MTProps, {args: string}> {
-    state$: BehaviorSubject<string>;
-    mountState: BehaviorSubject<Date>;
-    dispatch: Dispatch;
+export class MultiText extends React.Component<MTProps, {value: string}> {
+    state$: BehaviorSubject<string>
+    mountState: BehaviorSubject<Date>
+    dispatch: Dispatch
 
     constructor(props: MTProps) {
-        super(props);
-        this.componentDidMount.bind(this);
+        super(props)
+        this.componentDidMount.bind(this)
         // Get the dispatch set up
-        this.dispatch = dispatch;
+        this.dispatch = dispatch
         
         this.state = {
-            args: this.loadDefaultArgs()
-        };
+            value: this.loadDefaultArgs()
+        }
 
         // Create all our StreamInfo types so we can register them to Dispatch
-        let mountSI = this.makeStreamInfo('mount-state', 'Date', new Date());
-        this.mountState = mountSI.stream as BehaviorSubject<Date>;
-        let stateSI = this.makeStreamInfo('textarea', 'string', this.state.args);
-        this.state$ = stateSI.stream as BehaviorSubject<string>;
+        let mountSI = this.makeStreamInfo('mount-state', 'Date', new Date())
+        this.mountState = mountSI.stream as BehaviorSubject<Date>
+        let stateSI = this.makeStreamInfo('textarea', 'string', this.state.value)
+        this.state$ = stateSI.stream as BehaviorSubject<string>
 
-        this.dispatch.register(mountSI);
-        this.dispatch.register(stateSI);
+        this.dispatch.register(mountSI)
+        this.dispatch.register(stateSI)
     }
 
     /**
@@ -59,21 +59,24 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
             streamName: sName,
             streamType: sType,
             stream: new BehaviorSubject(start)
-        } as StreamInfo<T>;
+        } as StreamInfo<T>
     }
 
     // Note:  If you dont write these methods with fat arrow style, _this_ is not bound correctly when called
     handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        event.persist();  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
-        let text: string = event.target.value;
-        this.setState({args: text}, () => {
-            this.state$.next(text);
-        });
+        event.persist()  // Had to persist the event, to make it a reuseable event from the SyntheticEvent pool
+        let text: string = event.target.value
+        this.setState({value: text}, () => {
+            this.state$.next(text)
+        })
     }
 
     componentDidMount() {
-        console.log(`Mounted MultiText ${this.props.id}`);
-        this.mountState.next(new Date());
+        console.log(`Mounted MultiText ${this.props.id}`)
+        this.mountState.next(new Date())
+        this.state$.subscribe(text => {
+            this.setState({value: text})
+        })
     }
 
     defaultArgs = (): string => {
@@ -103,13 +106,13 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
                     suffix: ''
                 }
             }
-        };
+        }
           
-        return JSON.stringify(args, null, 2);
+        return JSON.stringify(args, null, 2)
     }
 
     defaultUMBListener = (): string => {
-        let randUUID = uuid();
+        let randUUID = uuid()
         let data = {
             topic: `Consumer.client-polarize.${randUUID}.VirtualTopic.qe.ci.>`,
             selector: '',
@@ -117,29 +120,29 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
             tag: 'rhsmqe',
             clientAddress: null,
             'bus-address': 'rhsmqe.messages'
-        };
+        }
 
         let args = { op: 'umb',
             type: 'request',
             data: JSON.stringify(data),
             tag: 'rhsm-qe',
             ack: false
-        };
-        return JSON.stringify(args, null, 2);
+        }
+        return JSON.stringify(args, null, 2)
     }
 
     loadDefaultArgs(): string {
         switch (this.props.id) {
             case 'args':
-                return this.defaultArgs();
+                return this.defaultArgs()
             case 'testcase':
-                return defaultXml;
+                return defaultXml
             case 'mapping':
-                return defaultMapping;
+                return defaultMapping
             case 'umb':
-                return this.defaultUMBListener();
+                return this.defaultUMBListener()
             default:
-                return '';
+                return ''
         }
     }
 
@@ -159,13 +162,13 @@ export class MultiText extends React.Component<MTProps, {args: string}> {
                                 name={this.props.id}
                                 cols={this.props.cols}
                                 rows={this.props.rows}
-                                value={this.state.args}
+                                value={this.state.value}
                                 onChange={this.handleChange}
                             />
                         </div>
                     </div>
                 </div>
             </div>
-        );
+        )
     }
 }

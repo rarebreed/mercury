@@ -14,7 +14,7 @@ type TestCase = {
     title: string;
     description: string;
     teststeps: Array<Array<TestStepColumn>>;
-};
+}
 
 export interface TextMessage {
     op: string;
@@ -51,7 +51,7 @@ export const templateXML = (args: TestCase) => `
     </custom-fields>
   </testcase>
 </testcases>
-`;
+`
 
 export const defaultXml: string = `
 <testcases  project-id="PLATTP">
@@ -79,7 +79,7 @@ export const defaultXml: string = `
         <custom-field id="subtype2" content="-"></custom-field>
     </custom-fields>
   </testcase>
-</testcases>`;
+</testcases>`
 
 export const defaultMapping = `
 {
@@ -125,7 +125,7 @@ export const defaultMapping = `
         "parameters" : [ "name", "age" ]
       }
     }
-}`;
+}`
 
 export const makeRequest = ( op: string
                            , type: string
@@ -138,8 +138,8 @@ export const makeRequest = ( op: string
         tag: tag,
         ack: ack,
         data: JSON.stringify(data, null, 2)
-    };
-};
+    }
+}
 
 export type UMBData = {
     topic: string;
@@ -147,4 +147,4 @@ export type UMBData = {
     'bus-address': string;
     action: string;
     tag: string;
-};
+}

@@ -69,7 +69,7 @@
             }],
             "severity": "error"
         },
-        "semicolon": [true, "always"],
+        "semicolon": [true, "never", "ignore-interfaces"],
         "switch-default": true,
 
         "trailing-comma": [false],

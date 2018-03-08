@@ -2,9 +2,9 @@
  * This component will let you pick default files
  */
 
-import * as React from 'react';
+import * as React from 'react'
 
-type KeyValueList = [string, string][];
+type KeyValueList = [string, string][]
 
 interface FilePickerProps {
     options: KeyValueList;
@@ -16,32 +16,31 @@ interface FilePickerState {
 }
 
 export class FilePicker extends React.Component<FilePickerProps, FilePickerState> {
-    fileInput: HTMLInputElement | null;
+    fileInput: HTMLInputElement | null
 
     constructor(props: FilePickerProps) {
-        super(props);
+        super(props)
 
         this.state = {
             selected: '',
             file: ''
-        };
+        }
     }
 
     onChange = (event: React.FormEvent<HTMLSelectElement>) => {
-        event.persist();
-        console.log(event);
-        this.setState({selected: event.currentTarget.value});
+        event.persist()
+        console.log(event)
+        this.setState({selected: event.currentTarget.value})
     }
 
     handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        let sel = '';
-        if (this.fileInput !== null && this.fileInput.files !== null) {
-            sel = this.fileInput.files[0].name;
-        }
+        let sel = ''
+        if (this.fileInput !== null && this.fileInput.files !== null)
+            sel = this.fileInput.files[0].name
         alert(
             `Selected file - ${sel}`
-        );
-        event.preventDefault();
+        )
+        event.preventDefault()
     }
 
     render() {
@@ -53,9 +52,9 @@ export class FilePicker extends React.Component<FilePickerProps, FilePickerState
                     <select value={this.state.selected} onChange={this.onChange}>
                         {
                             this.props.options.map(entry => {
-                                let [k, v] = entry;
-                                console.log(`k=${k}, v=${v}`);
-                                return <option key={k} value={k}>{v}</option>;
+                                let [k, v] = entry
+                                console.log(`k=${k}, v=${v}`)
+                                return <option key={k} value={k}>{v}</option>
                             })
                         }
                     </select>
@@ -64,12 +63,12 @@ export class FilePicker extends React.Component<FilePickerProps, FilePickerState
                         name="files" 
                         accept="text/html" 
                         ref={input => {
-                            this.fileInput = input;
+                            this.fileInput = input
                         }}
                     />
                     <input type="submit" value="Import" />
                 </div>
             </form>
-        );
+        )
     }
 }

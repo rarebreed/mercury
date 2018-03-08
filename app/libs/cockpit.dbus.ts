@@ -3,40 +3,40 @@ interface Cockpit {
     cockpit: any;
 }
 
-type MonkeyPatch = Window & Cockpit;
+type MonkeyPatch = Window & Cockpit
 
 const makePatch = (win: Window = window): MonkeyPatch => {
-    let w = {cockpit: null};
-    return Object.assign(w, win);
-};
+    let w = {cockpit: null}
+    return Object.assign(w, win)
+}
 
-const windoe = makePatch();
-export const cockpit = windoe.cockpit;
+const windoe = makePatch()
+export const cockpit = windoe.cockpit
 
 // ====================================================================
 // The com.redhat.SubscriptionManager Interfaces and Objects
 // ====================================================================
 // FIXME: This interface will be deprecated
-export const SubManSvc = 'com.redhat.SubscriptionManager';
+export const SubManSvc = 'com.redhat.SubscriptionManager'
 export const SubManIfcs = {
     EntitlementStatus: 'com.redhat.SubscriptionManager.EntitlementStatus'
-};
+}
 export const SubManObjs = {
     EntitlementStatus: '/EntitlementStatus'
-};
+}
 
 // The com.redhat.RHSM1 Interfaces and Objects
 // TODO: Add methods for each IFType (eg RegisterServer.Start)
-export type Services = 'com.redhat.RHSM1' | 'com.redhat.SubscriptionManager';
-const RHSMPaths = ['com', 'redhat', 'RHSM1'];
-export const RHSMSvc = 'com.redhat.RHSM1'; // RHSMPaths.join("."); if this is used, type checker will complain
+export type Services = 'com.redhat.RHSM1' | 'com.redhat.SubscriptionManager'
+const RHSMPaths = ['com', 'redhat', 'RHSM1']
+export const RHSMSvc = 'com.redhat.RHSM1' // RHSMPaths.join("."); if this is used, type checker will complain
 export type RHSMIFTypes = 'Attach'
                         | 'Config'
                         | 'Entitlement'
                         | 'Products'
                         | 'Register'
                         | 'RegisterServer'
-                        | 'Unregister';
+                        | 'Unregister'
 export const RHSMInterfaces: Array<RHSMIFTypes> = 
     [ 'Attach'
     , 'Config'
@@ -45,16 +45,16 @@ export const RHSMInterfaces: Array<RHSMIFTypes> =
     , 'Register'
     , 'RegisterServer'
     , 'Unregister'
-    ];
+    ]
     
 export const RHSMIfcs = RHSMInterfaces.reduce((acc, n) => {
-    acc[n] = `${RHSMSvc}.${n}`;
-    return acc;
-}, {});
+    acc[n] = `${RHSMSvc}.${n}`
+    return acc
+}, {})
 export const RHSMObjs = RHSMInterfaces.reduce((acc, n) => {
-    acc[n] = '/'.concat(RHSMPaths.join('/').concat(`/${n}`));
-    return acc;
-}, {});
+    acc[n] = '/'.concat(RHSMPaths.join('/').concat(`/${n}`))
+    return acc
+}, {})
 
 export interface DBusOpts {
     bus?: string;
@@ -64,7 +64,7 @@ export interface DBusOpts {
 }
 
 // TODO: Add Facts Interface and Objects
-export const suser: DBusOpts = { superuser: 'require' };
+export const suser: DBusOpts = { superuser: 'require' }
 
 export interface Service {
     wait(fn?: () => any): Promise<any>;
@@ -123,27 +123,25 @@ export
 function getService( svcName: Services | null = RHSMSvc
                    , opts: DBusOpts = {superuser: 'require'})
                    : Service {
-    console.debug(`Calling cockpit.dbus(${JSON.stringify(svcName)}, ${JSON.stringify(opts)})`);
-    let svc: Service = cockpit.dbus(svcName, opts);
-    return svc;
+    console.debug(`Calling cockpit.dbus(${JSON.stringify(svcName)}, ${JSON.stringify(opts)})`)
+    let svc: Service = cockpit.dbus(svcName, opts)
+    return svc
 }
 
 export function getProxy( svc: Service
   , iface: string
   , obj: string)
   : Proxy {
-console.debug(`Calling svc.proxy(${JSON.stringify(iface)}, ${JSON.stringify(obj)})`);
-let cfgPxy = svc.proxy(iface, obj);
-return cfgPxy;
+console.debug(`Calling svc.proxy(${JSON.stringify(iface)}, ${JSON.stringify(obj)})`)
+let cfgPxy = svc.proxy(iface, obj)
+return cfgPxy
 }
 
 export function getSvcProxy(svc: Service, ifc: string, obj?: string) {
-    if (obj == null) {
-        return svc.proxy(RHSMIfcs[ifc], RHSMObjs[ifc]);
-    } 
-    else {
-        return svc.proxy(ifc, obj);
-    }
+    if (obj == null)
+        return svc.proxy(RHSMIfcs[ifc], RHSMObjs[ifc])
+    else
+        return svc.proxy(ifc, obj)
 }
     
 /**
@@ -158,10 +156,10 @@ export function getSvcProxy(svc: Service, ifc: string, obj?: string) {
  * @param {*} opts 
  */
 export function getDbusIface(sName: Services | null, ifc: RHSMIFTypes, opts: DBusOpts = suser) {
-    let service = getService(RHSMSvc, suser);
-    let proxy = getSvcProxy(service, 'Config');
+    let service = getService(RHSMSvc, suser)
+    let proxy = getSvcProxy(service, 'Config')
     return {
         service: service,
         proxy: proxy
-    };
+    }
 }

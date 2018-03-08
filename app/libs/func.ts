@@ -4,8 +4,9 @@ export class Just<T> {
     }
 
     public get(): T {
-        return this.value;
+        return this.value
     }
 }
 
-export type Maybe<T> = Just<T> | null;
+export type Maybe<T> = Just<T> | null
+export type Optional<T> = T | null
