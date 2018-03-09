@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { BehaviorSubject } from 'rxjs/BehaviorSubject'
+import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/operator/map'
 import { defaultXml, defaultMapping } from '../libs/default.values'
 import { dispatch, Dispatch, StreamInfo } from '../libs/state.management'
@@ -29,6 +30,7 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
     state$: BehaviorSubject<string>
     mountState: BehaviorSubject<Date>
     dispatch: Dispatch
+    stateSubscription: Subscription
 
     constructor(props: MTProps) {
         super(props)
@@ -74,9 +76,15 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
     componentDidMount() {
         console.log(`Mounted MultiText ${this.props.id}`)
         this.mountState.next(new Date())
-        this.state$.subscribe(text => {
+        this.stateSubscription = this.state$.subscribe(text => {
+            console.debug(`Current state: ${text}`)
             this.setState({value: text})
         })
+    }
+
+    componentWillUnmount() {
+        if (this.stateSubscription)
+            this.stateSubscription.unsubscribe()
     }
 
     defaultArgs = (): string => {
@@ -88,7 +96,7 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
             ],
             servers: {
                 polarion: {
-                    url: 'https://polarion-devel.engineering.redhat.com/polarion',
+                    url: 'https://polarion-{}.redhat.com/polarion',
                     user: '',
                     password: ''
                 }
