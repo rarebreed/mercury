@@ -38,4 +38,4 @@ wss.on('connection', (ws, req) => {
     }) 
 })
 
-let service = server.listen(4001, () => console.log('Running mercury service at localhost:4001'))
+let service = server.listen(4000, () => console.log('Running mercury service at localhost:4000'))

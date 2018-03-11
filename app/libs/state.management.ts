@@ -6,6 +6,7 @@
 
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
+import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import { List, Range } from 'immutable'
 import { Just, Maybe } from './func'
 
@@ -21,6 +22,29 @@ export interface Record {
 
 export interface StreamInfo<T> extends Record {
     stream: Observable<T> | Subject<T>;
+}
+
+/**
+ * Creates a StreamInfo type for use with Dispatch
+ * 
+ * @param cName the Component name.  Should be unique to the application
+ * @param sName the Stream name.  Should be unique within the Component
+ * @param sType type of the stream 
+ * @param start either a type of T, an Observable<T>, or a Subject<T>
+ */
+export const 
+makeStreamInfo = <T extends {}>( cName: string
+                               , sName: string
+                               , sType: string
+                               , start: T | Observable<T> | Subject<T>) => {
+    return {
+        component: cName,
+        streamName: sName,
+        streamType: sType,
+        stream: start instanceof Observable ? start : 
+                start instanceof Subject ? start : 
+                new BehaviorSubject(start)
+    } as StreamInfo<T>
 }
 
 // An interface describing how to lookup a StreamInfo entry

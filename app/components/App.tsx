@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as Rx from 'rxjs/Rx'
 import { MultiText } from './MultiText'
-// import { FilePicker } from './FilePicker';
+import { Mercury } from './Mercury'
 import { Maybe } from '../libs/func'
 import { makeRequest, TextMessage } from '../libs/default.values'
 import { Dispatch
@@ -48,7 +48,7 @@ interface RowCols {
  * stream).  The other option is for Component A to obtain a reference to a Subject in Component B, and call the 
  * subject.next() method.
  */
-export class App extends React.Component<RowCols, {umbOutput: string}> {
+export class App extends Mercury<RowCols, {umbOutput: string}> {
     args: Map<string, MultiText> = new Map()
     textState: Map<string, Rx.BehaviorSubject<string>> = new Map()
     cancel: Map<string, Rx.Subscription | null> = new Map()
@@ -56,7 +56,7 @@ export class App extends React.Component<RowCols, {umbOutput: string}> {
     sockets: Map<string, WebSocket> = new Map()
     umbWs: Map<string, WebSocket> = new Map()
     dispatch: Dispatch = dispatch
-    bridge: WStoStreamBridge = new WStoStreamBridge(dispatch, 'ws://localhost:4001/ws')
+    bridge: WStoStreamBridge = new WStoStreamBridge(dispatch, 'ws://localhost:4000/ws')
     message$: Rx.Observable<TextMessage>
     message: TextMessage
     umbMsg$: Rx.Observable<string>
@@ -68,17 +68,19 @@ export class App extends React.Component<RowCols, {umbOutput: string}> {
         this.state = {
             umbOutput: ''
         }
+        this.modelInit.bind(this)
         this.modelInit()
     }
 
     /**
-     * Each component needs to set up the model, ie, the streams it is interested in.
+     * Listen for the dispatch events so that we know when the streams have been registered and are ready.
+     * 
+     * This is where we look for components that have registered to Dispatch.  Once we get this event, we
+     * know it is ready to be used.  If any of the streams get subscribed here, add the subscription object
+     * to this.cancel so that when the component unmounts, we can unsubscribe 
+     * 
      */
-    modelInit = () => {
-        // Listen for the dispatch events so that we know when the streams have been registered and are ready
-        // This is where we look for components that have registered to Dispatch.  Once we get this event, we
-        // know it is ready to be used.  If any of the streams get subscribed here, add the subscription object
-        // to this.cancel so that when the component unmounts, we can unsubscribe 
+    modelInit() {
         let mountAction$ = this.dispatch.info
             .do(evt => console.log(`In App, Got a Dispatch event: ${JSON.stringify(evt, null, 2)}`))
             .filter(evt => evt.action === 'mounted')

@@ -3,7 +3,9 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/operator/map'
 import { defaultXml, defaultMapping } from '../libs/default.values'
-import { dispatch, Dispatch, StreamInfo } from '../libs/state.management'
+import { StreamInfo } from '../libs/state.management'
+// import { RadioChoice } from './RadioChoice'
+import { Mercury } from './Mercury'
 const uuid = require('uuid/v4')
 
 export interface MTProps {
@@ -11,6 +13,11 @@ export interface MTProps {
     cols: number;  // Not sure if I should remove this.  It will be handled by bulma
     rows: number;
     label: string;
+}
+
+export interface MultiTextState {
+    value: string
+    visible: boolean
 }
 
 /** 
@@ -26,23 +33,26 @@ export interface MTProps {
  * until react does some things.  Just as writes to this.state has to go through this.setState, all reads
  * for the current state come from this.emitter
  */
-export class MultiText extends React.Component<MTProps, {value: string}> {
+export class MultiText extends Mercury<MTProps, MultiTextState> {
     state$: BehaviorSubject<string>
     mountState: BehaviorSubject<Date>
-    dispatch: Dispatch
     stateSubscription: Subscription
 
     constructor(props: MTProps) {
         super(props)
         this.componentDidMount.bind(this)
-        // Get the dispatch set up
-        this.dispatch = dispatch
         
         this.state = {
-            value: this.loadDefaultArgs()
+            value: this.loadDefaultArgs(),
+            visible: true
         }
 
-        // Create all our StreamInfo types so we can register them to Dispatch
+        this.modelInit.bind(this)
+        this.modelInit()
+    }
+
+    modelInit() {
+        // First, create all our StreamInfo types so we can register them to Dispatch
         let mountSI = this.makeStreamInfo('mount-state', 'Date', new Date())
         this.mountState = mountSI.stream as BehaviorSubject<Date>
         let stateSI = this.makeStreamInfo('textarea', 'string', this.state.value)
@@ -50,6 +60,7 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
 
         this.dispatch.register(mountSI)
         this.dispatch.register(stateSI)
+
     }
 
     /**
@@ -96,9 +107,9 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
             ],
             servers: {
                 polarion: {
-                    url: 'https://polarion-{}.redhat.com/polarion',
-                    user: '',
-                    password: ''
+                    url: 'https://polarion-devel.engineering.redhat.com/polarion',
+                    user: 'stoner',
+                    password: '!ronM@N1968'
                 }
             },
             testcase: {
@@ -161,6 +172,9 @@ export class MultiText extends React.Component<MTProps, {value: string}> {
                     <div className="hero-body">
                         <div className="container">
                             <h1 className="title">{this.props.label}</h1>
+                            {
+                                // <RadioChoice id={`${this.props.id}-choice`} choices={['Hide', 'Show']}/> 
+                            }
                         </div>
                     </div>
                     <div className="field">
