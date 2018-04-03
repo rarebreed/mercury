@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import { Mercury } from './Mercury'
-import { StreamInfo, makeStreamInfo } from '../libs/state.management'
+import { StreamInfo, makeStreamInfo } from 'auctrix'
 
 interface RadioChoices {
     id: string

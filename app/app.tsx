@@ -4,6 +4,6 @@ import { App } from './components/App'
 import './assets/css/bulma.css'
 
 ReactDOM.render(
-    <App cols={100} rows={25} />,
+    <App cols={80} rows={15} />,
     document.getElementById('app')
 )

@@ -16,16 +16,11 @@ type TestCase = {
     teststeps: Array<Array<TestStepColumn>>;
 }
 
-export interface TextMessage {
-    op: string;
-    type: string;
-    tag: string;
-    data: string;  // FIXME: This is really ugly, but I have to fix this in java first.  SHould be generic
-    ack: boolean;
-}
-
 export const templateXML = (args: TestCase) => `
 <testcases  project-id="${args.project}">
+  <response-properties>
+    <response-property name="rhsm_qe" value="testcase_importer"/>
+  </response-properties>
   <testcase id="${args.testcase_id}">
     <title>${args.title}</title>
     <description>${args.description}</description>
@@ -55,6 +50,9 @@ export const templateXML = (args: TestCase) => `
 
 export const defaultXml: string = `
 <testcases  project-id="PLATTP">
+  <response-properties>
+    <response-property name="rhsm_qe" value="testcase_importer"/>
+  </response-properties>
   <testcase id="">
     <title>RHSM-TC : rhsm.cli.tests.BashCompletionTests.testBashCompletion</title>
     <description>when subscription-manager is run with no args, it should default to the help report</description>
@@ -126,20 +124,6 @@ export const defaultMapping = `
       }
     }
 }`
-
-export const makeRequest = ( op: string
-                           , type: string
-                           , tag: string
-                           , data: {}
-                           , ack: boolean = true): TextMessage => {
-    return {
-        op: op,
-        type: type,
-        tag: tag,
-        ack: ack,
-        data: JSON.stringify(data, null, 2)
-    }
-}
 
 export type UMBData = {
     topic: string;

@@ -3,3 +3,4 @@ dist/
 build/
 node_modules/
 server.js
+*.config.json

@@ -1,21 +1,23 @@
 import * as React from 'react'
-import * as Rx from 'rxjs/Rx'
 import { MultiText } from './MultiText'
 import { Mercury } from './Mercury'
-import { Maybe } from '../libs/func'
-import { makeRequest, TextMessage } from '../libs/default.values'
 import { Dispatch
-       , dispatch
        , getMatched
        , lookup
        , WStoStreamBridge
        , Lookup
-       , IndexedStreamInfo } from '../libs/state.management'
+       , makeRequest
+       , TextMessage
+       , IndexedStreamInfo } from 'auctrix'
+import { Func } from 'auctrix'
+import { Observable, BehaviorSubject, Subscription } from 'rxjs'
 
 interface RowCols {
     cols: number;
     rows: number;
 }
+
+const dispatch: Dispatch = new Dispatch()
 
 /**
  * This is the main application class.  It follows the Model-View-Action model (a loose interpretation of cyclejs's 
@@ -50,26 +52,30 @@ interface RowCols {
  */
 export class App extends Mercury<RowCols, {umbOutput: string}> {
     args: Map<string, MultiText> = new Map()
-    textState: Map<string, Rx.BehaviorSubject<string>> = new Map()
-    cancel: Map<string, Rx.Subscription | null> = new Map()
-    mount$: Rx.BehaviorSubject<number> = new Rx.BehaviorSubject(0)
+    textState: Map<string, BehaviorSubject<string>> = new Map()
+    cancel: Map<string, Subscription> = new Map()
+    mount$: BehaviorSubject<number> = new BehaviorSubject(0)
     sockets: Map<string, WebSocket> = new Map()
     umbWs: Map<string, WebSocket> = new Map()
     dispatch: Dispatch = dispatch
-    bridge: WStoStreamBridge = new WStoStreamBridge(dispatch, 'ws://localhost:4000/ws')
-    message$: Rx.Observable<TextMessage>
+    bridge: WStoStreamBridge = new WStoStreamBridge('ws://localhost:4000/ws', dispatch)
+    message$: Observable<TextMessage>
     message: TextMessage
-    umbMsg$: Rx.Observable<string>
+    umbMsg$: Observable<string>
     currentArgsText: string
 
     constructor(props: RowCols) {
         super(props)
-
+        
         this.state = {
             umbOutput: ''
         }
         this.modelInit.bind(this)
         this.modelInit()
+    }
+
+    static readConfig() {
+        // Look for MERCURY_CONFIG env var, then in ~/.mercury/mercury.config.json
     }
 
     /**
@@ -91,9 +97,11 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
                     // Get the umb output.  At this point, it should be available in Dispatch
                     this.getStreamFromDispatch<string>({cName: 'umb', sName: 'textarea'}, (found) => {
                         if (this.umbMsg$ === undefined || this.umbMsg$ === null)
-                            if (found !== null)
-                                this.umbMsg$ = found.get()[1].stream as Rx.Observable<string>
-                                // console.log(`umbMsg$ stream: ${JSON.stringify(this.umbMsg$)}`)
+                            if (found !== null) { 
+                                let s$ = found.get()[1].stream
+                                if (s$ instanceof Observable)
+                                    this.umbMsg$ = s$
+                            }
                     })
                     break
                 case 'umb-out':
@@ -101,9 +109,10 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
                         let umbOutTextArea = this.textState.get('umb-out-text')
                         if (umbOutTextArea === undefined)
                             if (found !== null) {
-                                let umbOut$ = found.get()[1].stream as Rx.BehaviorSubject<string>
-                                this.textState.set('umb-out-text', umbOut$)
-                                // console.log(`umbOut$ stream: ${JSON.stringify(umbOut$)}`)
+                                let s$ = found.get()[1].stream
+                                if (s$ instanceof BehaviorSubject)
+                                    this.textState.set('umb-out-text', s$)
+                                    // console.log(`umbOut$ stream: ${JSON.stringify(umbOut$)}`)
                             }
                     })
                     break
@@ -112,12 +121,14 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
                         let argsTextArea = this.textState.get('args')
                         if (argsTextArea === undefined)
                             if (found !== null) {
-                                let args$ = found.get()[1].stream as Rx.BehaviorSubject<string>
-                                this.textState.set('args', args$)
-                                let sub = args$.subscribe(n => {
-                                    this.currentArgsText = n
-                                })
-                                this.cancel.set('args', sub)
+                                let s$ = found.get()[1].stream
+                                if (s$ instanceof BehaviorSubject) {
+                                    this.textState.set('args', s$)
+                                    let sub = s$.subscribe(n => {
+                                        this.currentArgsText = n
+                                    })
+                                    this.cancel.set('args', sub)
+                                }
                             }  
                     })
                     break
@@ -151,7 +162,7 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
     }
 
     getStreamFromDispatch = <T extends any>( search: Lookup
-                                           , fn: (indexsi: Maybe<IndexedStreamInfo<T>>) => void) => {
+                                           , fn: (indexsi: Func.Maybe<IndexedStreamInfo<T>>) => void) => {
         let found = getMatched<T>(lookup(search, this.dispatch.streams))
         fn(found)
     }
@@ -174,7 +185,7 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
      * every time the onChange is called from MultiText component, it will emit the event.  Let's 
      * merge these together
      */
-    actionAccumulateState = (): Rx.Observable<TextMessage> => {
+    actionAccumulateState = (): Observable<TextMessage> => {
         console.log('Getting the state')
         // Look up in dispatch the Observables we need
         let args = getMatched<string>(lookup({cName: 'args', sName: 'textarea'}, this.dispatch.streams))
@@ -185,24 +196,24 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
         if (args === null || testcase === null || mapping === null)
             throw Error('Subject was null')
         console.log('Getting actual streams')
-        let args$ = args.get()[1].stream as Rx.Observable<string>
-        let testcase$ = testcase.get()[1].stream as Rx.Observable<string>
-        let mapping$ = mapping.get()[1].stream as Rx.Observable<string>
+        let args$ = args.get()[1].stream as Observable<string>
+        let testcase$ = testcase.get()[1].stream as Observable<string>
+        let mapping$ = mapping.get()[1].stream as Observable<string>
 
         // Combine these into a request that we can submit over a socket
-        return Rx.Observable.merge( args$.map(a => new Object({tcargs: a}))
+        return Observable.merge( args$.map(a => new Object({tcargs: a}))
                                   , testcase$.map(t => new Object({testcase: t}))
                                   , mapping$.map(m => new Object({mapping: m})))
             .scan((acc, next) => Object.assign(acc, next), {})
             .map(data => {
-                let request = makeRequest('testcase-import', 'na', 'mercury', data)
+                let request = makeRequest('testcase-import', 'na', 'mercury', data, false)
                 return request
             })
     }
 
     setupWebSocket = ( key: string
                      , request: TextMessage
-                     , url: string = 'ws://localhost:9000/testcase/ws/import') => {
+                     , url: string = 'ws://localhost:9000/ws/testcase/import') => {
         console.log('Going to send message over websocket')
         let ws = new WebSocket(url)
         ws.onmessage = (event) => console.log(event.data)
@@ -236,7 +247,7 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
                 },
                 e => {
                     console.error('Problem getting TextMessage')
-                    this.message = makeRequest('', 'error', 'exception', {})
+                    this.message = makeRequest('', 'error', 'exception', {}, false)
                 }
             )
             this.cancel.set('testcase', unsub)
@@ -255,7 +266,12 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
             check.close()
 
         ws.onmessage = (evt) => {
-            console.log(evt.data)
+            try { 
+                console.log(JSON.parse(evt.data))
+            } catch {
+                console.error('Could not parse into object')
+                console.log(evt.data)
+            }
             let umbOut$ = this.textState.get('umb-out-text')
             this.setState({umbOutput: evt.data}, () => {
                 if (umbOut$ !== undefined)
@@ -333,6 +349,25 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
         sub.unsubscribe()
     }
 
+    onMessageSubmit = () => {
+        let ws = new WebSocket('ws://localhost:9000/umb/send')
+
+        let check = this.umbWs.get('umb-send')
+        if (check)
+            check.close()
+
+        ws.onmessage = (evt) => {
+            console.log(evt.data)
+            /* let umbOut$ = this.textState.get('umb-out-text')
+            this.setState({umbOutput: evt.data}, () => {
+                if (umbOut$ !== undefined)
+                    umbOut$.next(evt.data)
+            })
+            */
+        }
+        this.umbWs.set('umb-send', ws)
+    }
+
     render() {
         return (
             <div className="columns">
@@ -371,9 +406,15 @@ export class App extends Mercury<RowCols, {umbOutput: string}> {
                     </div>
                     <div className="field">
                         <div className="control">
-                            <MultiText label="TestCase websocket config" id="umb" {...this.props}/>
+                            <MultiText label="TestCase Config Args" id="umb-config" {...this.props}/>
                             <button onClick={this.onTestCaseSubmit}>Submit</button>
                             <button onClick={this.cancelUMB}>Cancel</button>
+                        </div>
+                    </div>
+                    <div className="field">
+                        <div className="control">
+                            <MultiText label="UMB Message Publish" id="umb-publish" {...this.props}/>
+                            <button onClick={this.onMessageSubmit}>Submit</button>
                         </div>
                     </div>
                 </div>

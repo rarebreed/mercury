@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/operator/map'
 import { defaultXml, defaultMapping } from '../libs/default.values'
-import { StreamInfo } from '../libs/state.management'
+import { StreamInfo } from 'auctrix'
 // import { RadioChoice } from './RadioChoice'
 import { Mercury } from './Mercury'
 const uuid = require('uuid/v4')
@@ -108,6 +108,7 @@ export class MultiText extends Mercury<MTProps, MultiTextState> {
             servers: {
                 polarion: {
                     url: 'https://polarion-devel.engineering.redhat.com/polarion',
+                    domain: '.engineering.redhat.com',
                     user: 'stoner',
                     password: '!ronM@N1968'
                 }

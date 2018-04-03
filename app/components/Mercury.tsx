@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { dispatch, Dispatch } from '../libs/state.management'
+import { dispatch, Dispatch } from 'auctrix'
 
 export abstract class Mercury<P, S> extends React.Component<P, S> {
     dispatch: Dispatch
