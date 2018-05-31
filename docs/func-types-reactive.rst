@@ -162,6 +162,13 @@ are for :)
 
 **Polymorphism problems**
 
+**TODO** explain how single dispatch polymorphism with the implicit *this* is limiting, and how generic programming is 
+often preferable.  Also explain the *expression problem* as defined by Philip Wadler (eg what traits in rust, typeclasses in haskell, and defproto in clojure solves).
+
+**Inheritance problems**
+
+**TODO**: explain how you should favor composition over inheritance most of the time
+
 Functional Programming (FP)
 ===========================
 
